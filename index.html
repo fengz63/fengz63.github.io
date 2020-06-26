@@ -168,10 +168,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2020-06-25 22:25:08 / Modified: 22:54:54" itemprop="dateCreated datePublished" datetime="2020-06-25T22:25:08+08:00">2020-06-25</time>
+              <time title="Created: 2020-06-25 22:25:08" itemprop="dateCreated datePublished" datetime="2020-06-25T22:25:08+08:00">2020-06-25</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-26 09:13:51" itemprop="dateModified" datetime="2020-06-26T09:13:51+08:00">2020-06-26</time>
+              </span>
 
           
 
@@ -184,19 +190,15 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="Docker系列教程-一-：环境配置"><a href="#Docker系列教程-一-：环境配置" class="headerlink" title="Docker系列教程(一)：环境配置"></a>Docker系列教程(一)：环境配置</h2><h3 id="1-从Docker存储库安装"><a href="#1-从Docker存储库安装" class="headerlink" title="1. 从Docker存储库安装"></a>1. 从Docker存储库安装</h3><pre><code>Docker目前分为两个版本，docker CE（社区版，免费），docker EE（商业版，收费）</code></pre><h4 id="1-1-旧版本卸载"><a href="#1-1-旧版本卸载" class="headerlink" title="1.1 旧版本卸载"></a>1.1 旧版本卸载</h4><pre><code>检查电脑上是否安装有docker，有的话首先卸载旧版的docker，/var/lib/docker/目录下的镜像文件，容器，卷和网络将会被保留，不会被删除。命令如下：</code></pre><figure class="highlight vb"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-<span class="keyword">get</span> remove docker docker-engine docker.io containerd runc</span><br></pre></td></tr></table></figure>
-<h3 id="1-2-安装docker"><a href="#1-2-安装docker" class="headerlink" title="1.2 安装docker"></a>1.2 安装docker</h3><p>从docker存储库安装docker-ce之前，首先需要安装一些依赖项</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install \</span><br><span class="line">    apt-transport-https \</span><br><span class="line">    ca-certificates \</span><br><span class="line">    curl \</span><br><span class="line">    software-properties-common</span><br></pre></td></tr></table></figure>
-<p>安装完成后，添加docker密钥和docker’nightly’存储库。</p>
-<figure class="highlight vb"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</span><br><span class="line">echo <span class="string">"deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic nightly"</span> &gt; /etc/apt/sources.list.d/docker-nightly.list</span><br></pre></td></tr></table></figure>
-<p>并更新存储库</p>
-<figure class="highlight vb"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update</span><br></pre></td></tr></table></figure>
-<p>现在docker仓库已经添加到系统中。然后使用apt-get命令去安装它</p>
-<figure class="highlight vb"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install docker-ce</span><br></pre></td></tr></table></figure>
-<h3 id="1-3-Docker启动"><a href="#1-3-Docker启动" class="headerlink" title="1.3 Docker启动"></a>1.3 Docker启动</h3><p>安装完成后，启动Docker服务并使其每次在系统启动时启动。</p>
-<figure class="highlight vb"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemctl start docker</span><br><span class="line">systemctl enable docker</span><br></pre></td></tr></table></figure>
-<p>现在可以检查docker版本</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo docker --version</span><br></pre></td></tr></table></figure>
+          <h2 id="Docker系列教程-一-：环境配置"><a href="#Docker系列教程-一-：环境配置" class="headerlink" title="Docker系列教程(一)：环境配置"></a>Docker系列教程(一)：环境配置</h2><p>Docker 是一个开源的应用容器引擎，基于 Go 语言 并遵从 Apache2.0 协议开源。Docker 可以让开发者打包他们的应用以及依赖包到一个轻量级、可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制，相互之间不会有任何接口（类似 iPhone 的 app）,更重要的是容器性能开销极低。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/06/25/Ubuntu-18-04-docker%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -215,7 +217,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/24/hello-world/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/25/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -229,7 +231,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2020/06/24/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
+            <a href="/2020/06/25/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
         </h2>
 
         <div class="post-meta">
@@ -239,8 +241,15 @@
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2020-06-24 20:33:34" itemprop="dateCreated datePublished" datetime="2020-06-24T20:33:34+08:00">2020-06-24</time>
+              <time title="Created: 2020-06-25 21:35:02" itemprop="dateCreated datePublished" datetime="2020-06-25T21:35:02+08:00">2020-06-25</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-26 09:14:21" itemprop="dateModified" datetime="2020-06-26T09:14:21+08:00">2020-06-26</time>
+              </span>
 
           
 
@@ -254,19 +263,14 @@
 
       
           <p>Welcome to <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/" target="_blank" rel="noopener">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html" target="_blank" rel="noopener">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues" target="_blank" rel="noopener">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">"My New Post"</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="noopener">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html" target="_blank" rel="noopener">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="noopener">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html" target="_blank" rel="noopener">Deployment</a></p>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/06/25/hello-world/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
