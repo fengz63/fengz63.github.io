@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Feng&#39;s Tech Blogs</title>
+  
+  <subtitle>代码与生活</subtitle>
+  <link href="http://zfeng.github.io/atom.xml" rel="self"/>
+  
+  <link href="http://zfeng.github.io/"/>
+  <updated>2025-08-15T13:28:07.000Z</updated>
+  <id>http://zfeng.github.io/</id>
+  
+  <author>
+    <name>fengcode</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>夕阳</title>
+    <link href="http://zfeng.github.io/article/b52011779fe6/"/>
+    <id>http://zfeng.github.io/article/b52011779fe6/</id>
+    <published>2025-08-15T12:53:28.000Z</published>
+    <updated>2025-08-15T13:28:07.000Z</updated>
+    
+    <content type="html"><![CDATA[<p>今天是 2025年08月15日，星期五，今天是个可以早下班的日子。吃完饭后去阳台上走了一圈，夕阳非常的漂亮</p><span id="more"></span><p><img src="/images/2025_08_15_1.jpg"></p><p>另外贴一张前两天晚上拍的夜景吧，公司阳台的夜景也是非常漂亮的</p><p><img src="/images/2025_08_15_2.jpg"></p><p>踩着夕阳下班的感觉非常好！</p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;今天是 2025年08月15日，星期五，今天是个可以早下班的日子。吃完饭后去阳台上走了一圈，夕阳非常的漂亮&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>贵州之行</title>
+    <link href="http://zfeng.github.io/article/6a6bae1e9eab/"/>
+    <id>http://zfeng.github.io/article/6a6bae1e9eab/</id>
+    <published>2025-08-13T13:46:20.000Z</published>
+    <updated>2025-08-15T13:28:53.818Z</updated>
+    
+    <content type="html"><![CDATA[<p>2025.05.14-05.19趁着换工作中间休息的间隙，和朋友一起去了次贵州，行程共计五天。</p><span id="more"></span><p>这中间看到了不少的风景，也吃到了很多的美食。是从2022年毕业后上班以来最轻松、休息的最好的一次，晒一下看到的风景。</p><h3 id="贵阳街景"><a href="#贵阳街景" class="headerlink" title="贵阳街景"></a>贵阳街景</h3><p>青云集市看到的有意思的周边：<br><img src="/images/guiyang_1.jpg"></p><h3 id="荔波风景"><a href="#荔波风景" class="headerlink" title="荔波风景"></a>荔波风景</h3><p>荔波小七孔是非常出名的，然而去的时候因为刚下过雨，导致小七孔被淹，水也非常浑浊。不过在另一个地方看到了宝石绿的风景：</p><p><img src="/images/libo_1.jpg"></p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;2025.05.14-05.19趁着换工作中间休息的间隙，和朋友一起去了次贵州，行程共计五天。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    
+    
+    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Ubuntu 24.04 配置 Prometheus 和 Grafana 监控</title>
+    <link href="http://zfeng.github.io/article/4c19da53a46d/"/>
+    <id>http://zfeng.github.io/article/4c19da53a46d/</id>
+    <published>2025-08-10T07:23:47.000Z</published>
+    <updated>2025-08-15T13:29:14.069Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近工作中使用了 prometheus 数据采集搭配 grafana 监控，感觉监控使用很方便。于是趁着周末给自己家里的NAS上装了一个prometheus数据，在用grafana配合完成对个人NAS的性能监控。</p><span id="more"></span><h2 id="在宿主机上安装-Prometheus"><a href="#在宿主机上安装-Prometheus" class="headerlink" title="在宿主机上安装 Prometheus"></a>在宿主机上安装 Prometheus</h2><h3 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h3><p>Ubuntu 默认的源里面就有 prometheus 的安装包，因此安装命令：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install prometheus</span><br></pre></td></tr></table></figure><p>检查 prometheus 相关服务是否启动：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl status prometheus</span></span><br><span class="line">● prometheus.service - Monitoring system and <span class="keyword">time</span> series database</span><br><span class="line">     Loaded: loaded (/usr/lib/systemd/system/prometheus.service; enabled; preset: enabled)</span><br><span class="line">     Active: active (running) since Sun 2025-08-10 09:50:12 CST; 5h 4min ago</span><br><span class="line">       Docs: https://prometheus.io/docs/introduction/overview/</span><br><span class="line">             man:prometheus(1)</span><br><span class="line">   Main PID: 1270424 (prometheus)</span><br><span class="line">      Tasks: 11 (<span class="built_in">limit</span>: 9223)</span><br><span class="line">     Memory: 111.7M (peak: 148.7M)</span><br><span class="line">        CPU: 2min 2.878s</span><br><span class="line">     CGroup: /system.slice/prometheus.service</span><br><span class="line">             └─1270424 /usr/bin/prometheus</span><br><span class="line"></span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.181Z <span class="built_in">caller</span>=compact.go:523 level=info component=tsdb msg=<span class="string">&quot;write block&quot;</span> &gt;</span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.188Z <span class="built_in">caller</span>=head.go:1293 level=info component=tsdb msg=<span class="string">&quot;Head GC complet&gt;</span></span><br><span class="line"><span class="string">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.391Z caller=compact.go:464 level=info component=tsdb msg=&quot;</span>compact block&gt;</span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.397Z <span class="built_in">caller</span>=db.go:1617 level=info component=tsdb msg=<span class="string">&quot;Deleting obsolete&gt;</span></span><br><span class="line"><span class="string">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.402Z caller=db.go:1617 level=info component=tsdb msg=&quot;</span>Deleting obsolete&gt;</span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.406Z <span class="built_in">caller</span>=db.go:1617 level=info component=tsdb msg=<span class="string">&quot;Deleting obsolete&gt;</span></span><br><span class="line"><span class="string">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.714Z caller=compact.go:464 level=info component=tsdb msg=&quot;</span>compact block&gt;</span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.722Z <span class="built_in">caller</span>=db.go:1617 level=info component=tsdb msg=<span class="string">&quot;Deleting obsolete&gt;</span></span><br><span class="line"><span class="string">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.729Z caller=db.go:1617 level=info component=tsdb msg=&quot;</span>Deleting obsolete&gt;</span><br><span class="line">8月 10 13:00:05 zfeng prometheus[1270424]: ts=2025-08-10T05:00:05.736Z <span class="built_in">caller</span>=db.go:1617 level=info component=tsdb msg=<span class="string">&quot;Deleting obsolete&gt;</span></span><br></pre></td></tr></table></figure><p>可以看到prometheus的控制端口是9090。此时在浏览器中访问服务器ip和9090端口，如果 prometheus 页面可以正常打开就说明安装完成：</p><p><img src="/images/prometheus_web_ui.png"></p><h2 id="在被监控节点安装-node-exporter"><a href="#在被监控节点安装-node-exporter" class="headerlink" title="在被监控节点安装 node-exporter"></a>在被监控节点安装 node-exporter</h2><p>也是直接从ubuntu源安装</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install prometheus-node-exporter</span><br></pre></td></tr></table></figure><p>检查 node-exporter 服务有没有启动</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl status prometheus-node-exporter</span></span><br><span class="line">● prometheus-node-exporter.service - Prometheus exporter <span class="keyword">for</span> machine metrics</span><br><span class="line">     Loaded: loaded (/usr/lib/systemd/system/prometheus-node-exporter.service; enabled; preset: enabled)</span><br><span class="line">     Active: active (running) since Sat 2025-08-09 18:30:39 CST; 20h ago</span><br><span class="line">       Docs: https://github.com/prometheus/node_exporter</span><br><span class="line">   Main PID: 1221924 (prometheus-node)</span><br><span class="line">      Tasks: 6 (<span class="built_in">limit</span>: 9223)</span><br><span class="line">     Memory: 10.6M (peak: 12.2M)</span><br><span class="line">        CPU: 24min 7.150s</span><br><span class="line">     CGroup: /system.slice/prometheus-node-exporter.service</span><br><span class="line">             └─1221924 /usr/bin/prometheus-node-exporter <span class="string">&quot;--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|run)(\$|/)&quot;</span> <span class="string">&quot;--coll&gt;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=the&gt;</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=time</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=tim&gt;</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=udp&gt;</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=una&gt;</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=vms&gt;</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=xfs</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.940Z caller=node_exporter.go:117 level=info collector=zfs</span></span><br><span class="line"><span class="string">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.941Z caller=tls_config.go:313 level=info msg=&quot;</span>Listening o&gt;</span><br><span class="line">8月 09 18:30:39 zfeng prometheus-node-exporter[1221924]: ts=2025-08-09T10:30:39.941Z <span class="built_in">caller</span>=tls_config.go:316 level=info msg=<span class="string">&quot;TLS is disa&gt;</span></span><br></pre></td></tr></table></figure><p>可以看到 node-exporter 监控的端口号是 9100。</p><h2 id="配置监控机的-prometheus-xml-加入被监控的节点"><a href="#配置监控机的-prometheus-xml-加入被监控的节点" class="headerlink" title="配置监控机的 prometheus.xml 加入被监控的节点"></a>配置监控机的 prometheus.xml 加入被监控的节点</h2><p>打开<code>/etc/prometheus/prometheus.yml</code>文件，编辑对应位置，加入节点配置，如下：<br><img src="/images/prometheus_server_config.png"><br>然后重启服务：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart prometheus</span><br></pre></td></tr></table></figure><p>再打开 prometheus 的监控列表，发现已有两个节点被监控了，包括监控机本身：</p><p><img src="/images/prometheus_web_ui_2.png"></p><h2 id="安装-Grafana"><a href="#安装-Grafana" class="headerlink" title="安装 Grafana"></a>安装 Grafana</h2><p>Ubuntu 默认源中没有 grafana 的安装包，因此需要添加对应的源。国内可以用清华源代替，详细见：<a href="https://mirrors.tuna.tsinghua.edu.cn/help/grafana/">添加 Grafana 软件仓库</a></p><p>安装完后检查服务是否启动：</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># systemctl status grafana-server</span></span><br><span class="line">● grafana-server.service - Grafana instance</span><br><span class="line">     Loaded: loaded (/usr/lib/systemd/system/grafana-server.service; disabled; preset: enabled)</span><br><span class="line">     Active: active (running) since Sat 2025-08-09 18:00:09 CST; 21h ago</span><br><span class="line">       Docs: http://docs.grafana.org</span><br><span class="line">   Main PID: 1219957 (grafana)</span><br><span class="line">      Tasks: 19 (<span class="built_in">limit</span>: 9223)</span><br><span class="line">     Memory: 122.9M (peak: 158.3M)</span><br><span class="line">        CPU: 11min 21.470s</span><br><span class="line">     CGroup: /system.slice/grafana-server.service</span><br><span class="line">             └─1219957 /usr/share/grafana/bin/grafana server --config=/etc/grafana/grafana.ini --pidfile=/run/grafana/grafana-server.pid &gt;</span><br><span class="line"></span><br><span class="line">8月 10 15:00:22 zfeng grafana[1219957]: logger=cleanup t=2025-08-10T15:00:22.049771001+08:00 level=info msg=<span class="string">&quot;Completed cleanup jobs&quot;</span> dura&gt;</span><br><span class="line">8月 10 15:00:23 zfeng grafana[1219957]: logger=plugins.update.checker t=2025-08-10T15:00:23.431751891+08:00 level=info msg=<span class="string">&quot;Update check &gt;</span></span><br><span class="line"><span class="string">8月 10 15:01:28 zfeng grafana[1219957]: logger=infra.usagestats t=2025-08-10T15:01:28.986667313+08:00 level=info msg=&quot;</span>Usage stats are rea&gt;</span><br><span class="line">8月 10 15:10:22 zfeng grafana[1219957]: logger=cleanup t=2025-08-10T15:10:22.020334022+08:00 level=info msg=<span class="string">&quot;Completed cleanup jobs&quot;</span> dura&gt;</span><br><span class="line">8月 10 15:10:23 zfeng grafana[1219957]: logger=plugins.update.checker t=2025-08-10T15:10:23.51111745+08:00 level=info msg=<span class="string">&quot;Update check s&gt;</span></span><br><span class="line"><span class="string">8月 10 15:20:22 zfeng grafana[1219957]: logger=cleanup t=2025-08-10T15:20:22.022565084+08:00 level=info msg=&quot;</span>Completed cleanup <span class="built_in">jobs</span><span class="string">&quot; dura&gt;</span></span><br><span class="line"><span class="string">8月 10 15:20:23 zfeng grafana[1219957]: logger=plugins.update.checker t=2025-08-10T15:20:23.415660356+08:00 level=info msg=&quot;</span>Update check &gt;</span><br><span class="line">8月 10 15:30:22 zfeng grafana[1219957]: logger=cleanup t=2025-08-10T15:30:22.047368654+08:00 level=info msg=<span class="string">&quot;Completed cleanup jobs&quot;</span> dura&gt;</span><br><span class="line">8月 10 15:30:23 zfeng grafana[1219957]: logger=plugins.update.checker t=2025-08-10T15:30:23.469371479+08:00 level=info msg=<span class="string">&quot;Update check &gt;</span></span><br><span class="line"><span class="string">8月 10 15:31:28 zfeng grafana[1219957]: logger=infra.usagestats t=2025-08-10T15:31:28.98688322+08:00 level=info msg=&quot;</span>Usage stats are <span class="built_in">read</span>&gt;</span><br></pre></td></tr></table></figure><p>默认情况下是已经启动的，如果没启动，手动启动就好。grafana 服务默认监控端口是 3000，从浏览器中输入 ip:3000，如果能显示 grafana 页面表示一切正常。</p><h2 id="配置-Grafana"><a href="#配置-Grafana" class="headerlink" title="配置 Grafana"></a>配置 Grafana</h2><p>Grafana 默认的账号和密码都是 admin，先登录。</p><h3 id="添加数据源"><a href="#添加数据源" class="headerlink" title="添加数据源"></a>添加数据源</h3><p>打开 Web UI，进入：<code>Connections-&gt;Data Sources</code>，点击 <code>Add new data source</code> 按钮:<br><img src="/images/grafana_1.png"><br>选择 Prometheus：<br><img src="/images/grafana_2.png"><br>修改 Connection 选项中对应的地址，改为 prometheus server 对应的地址即可。<br><img src="/images/grafana_3.png"></p><h3 id="添加-Dashboard"><a href="#添加-Dashboard" class="headerlink" title="添加 Dashboard"></a>添加 Dashboard</h3><p>Dashboard 添加有现成的模版，可以去这里找：<a href="https://grafana.com/grafana/dashboards/?search=8919">https://grafana.com/grafana/dashboards/?search=8919</a>。</p><p><img src="/images/grafana_dashboard.png"></p><p>选择 Linux 主机详情下载对应的json文件即可。</p><p>下载完成后在 grafana Web UI 中<code>New-&gt;Import</code>选择刚才下载的 json 文件即可得到一个比较完善的 Linux 主机详情监控面板了：</p><p><img src="/images/grafana_dashboard_2.png"></p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;最近工作中使用了 prometheus 数据采集搭配 grafana 监控，感觉监控使用很方便。于是趁着周末给自己家里的NAS上装了一个prometheus数据，在用grafana配合完成对个人NAS的性能监控。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="技术" scheme="http://zfeng.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
+    
+    
+    <category term="技术" scheme="http://zfeng.github.io/tags/%E6%8A%80%E6%9C%AF/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>随手笔记</title>
+    <link href="http://zfeng.github.io/article/ce187fcf7d42/"/>
+    <id>http://zfeng.github.io/article/ce187fcf7d42/</id>
+    <published>2025-08-09T17:30:20.000Z</published>
+    <updated>2025-08-15T13:29:06.886Z</updated>
+    
+    <content type="html"><![CDATA[<p>今天的杭州37度的高温，非常热，不知道什么时候秋天才能来呢。</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;今天的杭州37度的高温，非常热，不知道什么时候秋天才能来呢。&lt;/p&gt;
+</summary>
+      
+    
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>重庆之行</title>
+    <link href="http://zfeng.github.io/article/d8644e889782/"/>
+    <id>http://zfeng.github.io/article/d8644e889782/</id>
+    <published>2025-01-02T21:02:20.000Z</published>
+    <updated>2025-08-15T13:28:47.001Z</updated>
+    
+    <content type="html"><![CDATA[<p>2024年12月21日和22日进行了为期两天的重庆之行。</p><span id="more"></span><p>早上6点45的飞机让我一大早起来开车去机场，停车、安检、候机，等坐在飞机上那一刻已经是6点15了，虽然非常困，但是想着马上可以去自己想去的地方还是蛮开心的。<br>飞机上看到了非常壮观的云层<br><img src="/images/chongqing_20231221_1.jpg"></p><p>晚上吃完火锅后在千斯门大桥旁边看到了美丽的夜景<br><img src="/images/chongqing_20231221_2.jpg"></p><p>沿江边漫步，感觉非常的惬意舒适，不得不说，重庆相对于杭州来说还是非常适合生活的。</p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;2024年12月21日和22日进行了为期两天的重庆之行。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    
+    
+    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>新年快乐</title>
+    <link href="http://zfeng.github.io/article/6b4a87f41aa8/"/>
+    <id>http://zfeng.github.io/article/6b4a87f41aa8/</id>
+    <published>2025-01-01T15:24:09.000Z</published>
+    <updated>2025-08-15T13:29:03.404Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="新年第一天"><a href="#新年第一天" class="headerlink" title="新年第一天"></a>新年第一天</h3><p>今天是2025年1月1日，新年的第一天，今天开始打算维护一个自己的blog，这是开始。<br>不管怎么说，新的一年，希望事事顺心，新年快乐！</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;h3 id=&quot;新年第一天&quot;&gt;&lt;a href=&quot;#新年第一天&quot; class=&quot;headerlink&quot; title=&quot;新年第一天&quot;&gt;&lt;/a&gt;新年第一天&lt;/h3&gt;&lt;p&gt;今天是2025年1月1日，新年的第一天，今天开始打算维护一个自己的blog，这是开始。&lt;br&gt;不管怎么说，新的一年，</summary>
+      
+    
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    
+    
+    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    
+  </entry>
+  
+</feed>
