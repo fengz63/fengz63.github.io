@@ -1,0 +1,226 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>client-go 源码解读（一）总述 | Feng&#39;s Tech Blogs | 代码与生活</title>
+
+  
+  <meta name="author" content="fengcode">
+  
+
+  
+  <meta name="description" content="some notes of my life">
+  
+
+  
+  
+  <meta name="keywords" content="技术,Kubernetes源码解读">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="client-go 源码解读（一）总述"/>
+
+  <meta property="og:site_name" content="Feng&#39;s Tech Blogs"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Feng&#39;s Tech Blogs" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  
+  <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
+  <script src="/js/pangu-407.min.js"></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    pangu.autoSpacingPage();
+  });
+</script>
+
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">Feng&#39;s Tech Blogs</a>
+    </h1>
+    <p class="site-description">代码与生活</p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/archives">归档</a></li>
+      
+        <li><a href="/categories">分类</a></li>
+      
+        <li><a href="/about">关于</a></li>
+      
+        <li><a href="/atom.xml">订阅</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>client-go 源码解读（一）总述</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/372617688925/" rel="bookmark">
+        <time class="entry-date published" datetime="2025-08-18T13:37:33.000Z">
+          2025-08-18
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        
+
+<script type="text/javascript">
+    function convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+    window.onscroll = function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if (scrollTop > convertRemToPixels(40)) {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'visible';
+        } else {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'hidden';
+        }
+    }
+</script>
+
+
+<div id="toc" class="toc-article">
+      <div class="toc-content">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%83%8C%E6%99%AF"><span class="toc-text">1. 背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-client-go-%E6%9E%B6%E6%9E%84"><span class="toc-text">2. client-go 架构</span></a></li></ol>
+      </div>
+</div>
+<style>
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+
+
+        <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>最近工作中频繁用到 Informer、Controller 等相关组件，以及 List、Watch 等 API，为了更好地理解其工作原理，决定对 client-go 源码进行详细解读。</p>
+<span id="more"></span>
+
+<h2 id="2-client-go-架构"><a href="#2-client-go-架构" class="headerlink" title="2. client-go 架构"></a>2. client-go 架构</h2><p>在开始源码解读之前，先简单介绍一下 client-go 一些相关的结构，示意图如下：</p>
+<p><img src="https://cdn.jsdelivr.net/gh/fengz63/picture@main/2025/08/18/18210845.jpeg"></p>
+<p>整个架构图分为上下两部分，其中上半部分为 client-go 的实现，而下半部分是我们自己要实现的 custom controller，每部分由不同的组件组成，上下两部分通过虚线连接起来。我们着重介绍下上半部分的组件，后续的源码解读也是基于上半部分架构图进行的。</p>
+<ul>
+<li><strong>Reflector</strong>：通过 List&amp;Watch 机制从 kube-apiserver 获取资源对象，并把数据放到 Delta FIFO 队列中；</li>
+<li><strong>DeltaFIFO</strong>：Delta FIFO 是一个先进先出队列，用于存储 Reflector 从 kube-apiserver 获取到的资源对象的增量变化</li>
+<li><strong>Informer</strong>：Informer 从 DeltaFIFO 中取出相应对象，然后通过 Indexer 将对象和索引丢到放入 cache 中，再触发相应的事件处理函数（Resource Event Handlers）运行；</li>
+<li><strong>Indexer</strong>：主要提供一个对象根据一定条件检索的能力，典型的是通过 namespace&#x2F;name 来构造 key，通过 ThreadSafeStore 来存储对象</li>
+<li><strong>Workqueue</strong>：Workqueue 一般使用的是延时队列实现，在 Resource Event Handlers 中会完成将对象的 key 放入 workqueue 的过程，然后我们在自己的逻辑代码里从 workqueue 中消费这些 key（架构图下半部分）；</li>
+<li><strong>Resource Event Handlers</strong>：Resource Event Handlers 是 Informer 注册的回调函数，当 Informer 从 DeltaFIFO 中取出对象后，会根据对象的操作类型（Add&#x2F;Update&#x2F;Delete）调用对应的回调函数；</li>
+</ul>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+  <section id="comments">
+    <script src="https://giscus.app/client.js"
+            data-repo="fengz63/fengz63.github.io"
+            data-repo-id="R_kgDONkh1Vg"
+            data-category="Q&amp;A"
+            data-category-id="DIC_kwDONkh1Vs4Cuqet"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="zh-CN"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Deployed by <a href="https://github.com/kaedea/notion-down" target="_blank">notion-down</a> and
+    Theme by <a href="https://github.com/kaedea/hexo-theme-hacker" target="_blank">hexo-theme-hacker</a>
+    </br>
+    
+    &copy; 2025 fengcode
+    
+  </p>
+</footer>
+    
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'G-J38N5N288S', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+  </div>
+</div>
+</body>
+</html>
