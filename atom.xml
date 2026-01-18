@@ -3,11 +3,11 @@
   <title>Feng&#39;s Tech Blogs</title>
   
   <subtitle>代码与生活</subtitle>
-  <link href="http://zfeng.github.io/atom.xml" rel="self"/>
+  <link href="https://tech.fznas.top/atom.xml" rel="self"/>
   
-  <link href="http://zfeng.github.io/"/>
+  <link href="https://tech.fznas.top/"/>
   <updated>2026-01-11T03:32:19.010Z</updated>
-  <id>http://zfeng.github.io/</id>
+  <id>https://tech.fznas.top/</id>
   
   <author>
     <name>fengcode</name>
@@ -18,8 +18,8 @@
   
   <entry>
     <title>饭后散步</title>
-    <link href="http://zfeng.github.io/article/247c2d00d4ba/"/>
-    <id>http://zfeng.github.io/article/247c2d00d4ba/</id>
+    <link href="https://tech.fznas.top/article/247c2d00d4ba/"/>
+    <id>https://tech.fznas.top/article/247c2d00d4ba/</id>
     <published>2026-01-10T05:16:40.000Z</published>
     <updated>2026-01-11T03:32:19.010Z</updated>
     
@@ -30,17 +30,17 @@
     
     
     
-    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/categories/%E7%94%9F%E6%B4%BB/"/>
     
     
-    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/tags/%E7%94%9F%E6%B4%BB/"/>
     
   </entry>
   
   <entry>
     <title>宁波的夕阳</title>
-    <link href="http://zfeng.github.io/article/72b635bfa387/"/>
-    <id>http://zfeng.github.io/article/72b635bfa387/</id>
+    <link href="https://tech.fznas.top/article/72b635bfa387/"/>
+    <id>https://tech.fznas.top/article/72b635bfa387/</id>
     <published>2025-12-14T07:55:18.000Z</published>
     <updated>2025-12-14T08:04:08.555Z</updated>
     
@@ -51,17 +51,17 @@
     
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/categories/%E6%97%85%E8%A1%8C/"/>
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/tags/%E6%97%85%E8%A1%8C/"/>
     
   </entry>
   
   <entry>
     <title>马鞍山之行</title>
-    <link href="http://zfeng.github.io/article/4000abd606c6/"/>
-    <id>http://zfeng.github.io/article/4000abd606c6/</id>
+    <link href="https://tech.fznas.top/article/4000abd606c6/"/>
+    <id>https://tech.fznas.top/article/4000abd606c6/</id>
     <published>2025-12-14T07:02:18.000Z</published>
     <updated>2025-12-14T08:04:03.704Z</updated>
     
@@ -72,17 +72,17 @@
     
     
     
-    <category term="生活、旅行" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB%E3%80%81%E6%97%85%E8%A1%8C/"/>
+    <category term="生活、旅行" scheme="https://tech.fznas.top/categories/%E7%94%9F%E6%B4%BB%E3%80%81%E6%97%85%E8%A1%8C/"/>
     
     
-    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/tags/%E7%94%9F%E6%B4%BB/"/>
     
   </entry>
   
   <entry>
     <title>client-go 源码解读（二）List and Watch机制</title>
-    <link href="http://zfeng.github.io/article/16b07ccc9216/"/>
-    <id>http://zfeng.github.io/article/16b07ccc9216/</id>
+    <link href="https://tech.fznas.top/article/16b07ccc9216/"/>
+    <id>https://tech.fznas.top/article/16b07ccc9216/</id>
     <published>2025-08-21T13:37:33.000Z</published>
     <updated>2025-08-22T12:54:28.427Z</updated>
     
@@ -94,19 +94,19 @@
     
     
     
-    <category term="技术" scheme="http://zfeng.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/categories/%E6%8A%80%E6%9C%AF/"/>
     
     
-    <category term="技术" scheme="http://zfeng.github.io/tags/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/tags/%E6%8A%80%E6%9C%AF/"/>
     
-    <category term="Kubernetes源码解读" scheme="http://zfeng.github.io/tags/Kubernetes%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/"/>
+    <category term="Kubernetes源码解读" scheme="https://tech.fznas.top/tags/Kubernetes%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/"/>
     
   </entry>
   
   <entry>
     <title>client-go 源码解读（一）总述</title>
-    <link href="http://zfeng.github.io/article/f38773245466/"/>
-    <id>http://zfeng.github.io/article/f38773245466/</id>
+    <link href="https://tech.fznas.top/article/f38773245466/"/>
+    <id>https://tech.fznas.top/article/f38773245466/</id>
     <published>2025-08-18T05:37:33.000Z</published>
     <updated>2025-08-22T12:56:54.679Z</updated>
     
@@ -117,19 +117,19 @@
     
     
     
-    <category term="技术" scheme="http://zfeng.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/categories/%E6%8A%80%E6%9C%AF/"/>
     
     
-    <category term="技术" scheme="http://zfeng.github.io/tags/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/tags/%E6%8A%80%E6%9C%AF/"/>
     
-    <category term="Kubernetes源码解读" scheme="http://zfeng.github.io/tags/Kubernetes%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/"/>
+    <category term="Kubernetes源码解读" scheme="https://tech.fznas.top/tags/Kubernetes%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB/"/>
     
   </entry>
   
   <entry>
     <title>夕阳</title>
-    <link href="http://zfeng.github.io/article/2f7c16779029/"/>
-    <id>http://zfeng.github.io/article/2f7c16779029/</id>
+    <link href="https://tech.fznas.top/article/2f7c16779029/"/>
+    <id>https://tech.fznas.top/article/2f7c16779029/</id>
     <published>2025-08-15T04:53:28.000Z</published>
     <updated>2025-08-21T14:30:38.275Z</updated>
     
@@ -140,17 +140,17 @@
     
     
     
-    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/categories/%E7%94%9F%E6%B4%BB/"/>
     
     
-    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/tags/%E7%94%9F%E6%B4%BB/"/>
     
   </entry>
   
   <entry>
     <title>贵州之行</title>
-    <link href="http://zfeng.github.io/article/87f8768f5359/"/>
-    <id>http://zfeng.github.io/article/87f8768f5359/</id>
+    <link href="https://tech.fznas.top/article/87f8768f5359/"/>
+    <id>https://tech.fznas.top/article/87f8768f5359/</id>
     <published>2025-08-13T05:46:20.000Z</published>
     <updated>2025-08-21T14:30:38.292Z</updated>
     
@@ -161,17 +161,17 @@
     
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/categories/%E6%97%85%E8%A1%8C/"/>
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/tags/%E6%97%85%E8%A1%8C/"/>
     
   </entry>
   
   <entry>
     <title>西北大环线</title>
-    <link href="http://zfeng.github.io/article/2106b23641be/"/>
-    <id>http://zfeng.github.io/article/2106b23641be/</id>
+    <link href="https://tech.fznas.top/article/2106b23641be/"/>
+    <id>https://tech.fznas.top/article/2106b23641be/</id>
     <published>2025-08-12T01:05:33.000Z</published>
     <updated>2025-08-21T14:30:38.287Z</updated>
     
@@ -182,17 +182,17 @@
     
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/categories/%E6%97%85%E8%A1%8C/"/>
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/tags/%E6%97%85%E8%A1%8C/"/>
     
   </entry>
   
   <entry>
     <title>Ubuntu 24.04 配置 Prometheus 和 Grafana 监控</title>
-    <link href="http://zfeng.github.io/article/66c4a6ec4170/"/>
-    <id>http://zfeng.github.io/article/66c4a6ec4170/</id>
+    <link href="https://tech.fznas.top/article/66c4a6ec4170/"/>
+    <id>https://tech.fznas.top/article/66c4a6ec4170/</id>
     <published>2025-08-09T23:23:47.000Z</published>
     <updated>2025-08-28T13:28:22.125Z</updated>
     
@@ -203,17 +203,17 @@
     
     
     
-    <category term="技术" scheme="http://zfeng.github.io/categories/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/categories/%E6%8A%80%E6%9C%AF/"/>
     
     
-    <category term="技术" scheme="http://zfeng.github.io/tags/%E6%8A%80%E6%9C%AF/"/>
+    <category term="技术" scheme="https://tech.fznas.top/tags/%E6%8A%80%E6%9C%AF/"/>
     
   </entry>
   
   <entry>
     <title>重庆之行</title>
-    <link href="http://zfeng.github.io/article/1900025819b3/"/>
-    <id>http://zfeng.github.io/article/1900025819b3/</id>
+    <link href="https://tech.fznas.top/article/1900025819b3/"/>
+    <id>https://tech.fznas.top/article/1900025819b3/</id>
     <published>2025-01-02T13:02:20.000Z</published>
     <updated>2025-08-21T14:30:38.298Z</updated>
     
@@ -224,17 +224,17 @@
     
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/categories/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/categories/%E6%97%85%E8%A1%8C/"/>
     
     
-    <category term="旅行" scheme="http://zfeng.github.io/tags/%E6%97%85%E8%A1%8C/"/>
+    <category term="旅行" scheme="https://tech.fznas.top/tags/%E6%97%85%E8%A1%8C/"/>
     
   </entry>
   
   <entry>
     <title>新年快乐</title>
-    <link href="http://zfeng.github.io/article/6d7784d653f0/"/>
-    <id>http://zfeng.github.io/article/6d7784d653f0/</id>
+    <link href="https://tech.fznas.top/article/6d7784d653f0/"/>
+    <id>https://tech.fznas.top/article/6d7784d653f0/</id>
     <published>2025-01-01T07:24:09.000Z</published>
     <updated>2025-08-21T14:30:38.281Z</updated>
     
@@ -248,10 +248,10 @@
     
     
     
-    <category term="生活" scheme="http://zfeng.github.io/categories/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/categories/%E7%94%9F%E6%B4%BB/"/>
     
     
-    <category term="生活" scheme="http://zfeng.github.io/tags/%E7%94%9F%E6%B4%BB/"/>
+    <category term="生活" scheme="https://tech.fznas.top/tags/%E7%94%9F%E6%B4%BB/"/>
     
   </entry>
   
