@@ -16,8 +16,8 @@ class ImageViewer {
         const overlay = document.createElement('div');
         overlay.className = 'image-viewer-overlay';
         overlay.innerHTML = `
+            <span class="image-viewer-close">&times;</span>
             <div class="image-viewer-container">
-                <span class="image-viewer-close">&times;</span>
                 <img class="image-viewer-img" src="" alt="">
                 <div class="image-viewer-caption"></div>
             </div>
