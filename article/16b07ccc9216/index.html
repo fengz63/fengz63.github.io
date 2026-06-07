@@ -1,0 +1,371 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>client-go 源码解读（二）List &amp; Watch 与 DeltaFIFO | Feng&#39;s Tech Blogs | 代码与生活</title>
+
+  
+  <meta name="author" content="fengcode">
+  
+
+  
+  <meta name="description" content="some notes of my life">
+  
+
+  
+  
+  <meta name="keywords" content="技术,Kubernetes源码解读">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="client-go 源码解读（二）List &amp; Watch 与 DeltaFIFO"/>
+
+  <meta property="og:site_name" content="Feng&#39;s Tech Blogs"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Feng&#39;s Tech Blogs" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  
+  <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
+  <script src="/js/pangu-407.min.js"></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    pangu.autoSpacingPage();
+  });
+</script>
+
+<!-- 添加图片查看器脚本 -->
+<script src="/js/image-viewer.js"></script>
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">Feng&#39;s Tech Blogs</a>
+    </h1>
+    <p class="site-description">代码与生活</p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/archives">归档</a></li>
+      
+        <li><a href="/categories">分类</a></li>
+      
+        <li><a href="/about">关于</a></li>
+      
+        <li><a href="/atom.xml">订阅</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>client-go 源码解读（二）List &amp; Watch 与 DeltaFIFO</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/16b07ccc9216/" rel="bookmark">
+        <time class="entry-date published" datetime="2025-08-21T13:37:33.000Z">
+          2025-08-21
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        
+
+<script type="text/javascript">
+    function convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+    window.onscroll = function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if (scrollTop > convertRemToPixels(40)) {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'visible';
+        } else {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'hidden';
+        }
+    }
+</script>
+
+
+<div id="toc" class="toc-article">
+      <div class="toc-content">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E8%83%8C%E6%99%AF"><span class="toc-text">1. 背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-ListerWatcher"><span class="toc-text">2. ListerWatcher</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E6%8E%A5%E5%8F%A3%E5%AE%9A%E4%B9%89"><span class="toc-text">2.1 接口定义</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-ListWatch-%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="toc-text">2.2 ListWatch 具体实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-Store-%E6%8E%A5%E5%8F%A3"><span class="toc-text">3. Store 接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-DeltaFIFO"><span class="toc-text">4. DeltaFIFO</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-text">4.1 数据结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-Delta-%E7%B1%BB%E5%9E%8B"><span class="toc-text">4.2 Delta 类型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E6%A0%B8%E5%BF%83%E6%93%8D%E4%BD%9C"><span class="toc-text">4.3 核心操作</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-Reflector"><span class="toc-text">5. Reflector</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E7%BB%93%E6%9E%84%E4%BD%93"><span class="toc-text">5.1 结构体</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E4%B8%BB%E5%BE%AA%E7%8E%AF%EF%BC%9AListAndWatchWithContext"><span class="toc-text">5.2 主循环：ListAndWatchWithContext</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-list-%E2%80%94-%E5%85%A8%E9%87%8F%E6%8B%89%E5%8F%96"><span class="toc-text">5.3 list() — 全量拉取</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-watch-%E2%80%94-%E5%A2%9E%E9%87%8F%E7%9B%91%E5%90%AC"><span class="toc-text">5.4 watch() — 增量监听</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-5-handleAnyWatch-%E2%80%94-%E4%BA%8B%E4%BB%B6%E5%A4%84%E7%90%86"><span class="toc-text">5.5 handleAnyWatch() — 事件处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-6-WatchList-%E6%B5%81%E6%A8%A1%E5%BC%8F%EF%BC%88KEP-3157%EF%BC%89"><span class="toc-text">5.6 WatchList 流模式（KEP-3157）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-7-%E8%BF%90%E8%A1%8C%E5%BE%AA%E7%8E%AF"><span class="toc-text">5.7 运行循环</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-ResourceVersion-%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-text">6. ResourceVersion 的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-%E6%80%BB%E7%BB%93"><span class="toc-text">7. 总结</span></a></li></ol>
+      </div>
+</div>
+<style>
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+
+
+        <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>Kubernetes 中所有的API对象都是存储在Etcd中，且只能通过kube-apiserver访问。当访问量很大时，kube-apiserver会不堪重负。</p>
+<p>基于上述考虑，kubernetes 中引入了一个informer机制，本质上是在内存中维护一个缓存，客户端的读写请求都可以通过缓存实现，而不必全部穿透到kube-apiserver。</p>
+<span id="more"></span>
+
+<p>Kubernetes实现这一缓存的核心就是 list 和 watch 操作。本文基于 Kubernetes 源码（路径：<code>staging/src/k8s.io/client-go/tools/cache/</code>），深入剖析list &amp; watch机制以及承载变更数据的 DeltaFIFO。</p>
+<h2 id="2-ListerWatcher"><a href="#2-ListerWatcher" class="headerlink" title="2. ListerWatcher"></a>2. ListerWatcher</h2><p>ListerWatcher 是 lister 和 watcher 的结合体，前者负责列举全量对象，后者负责监视对象的增量变化。</p>
+<h3 id="2-1-接口定义"><a href="#2-1-接口定义" class="headerlink" title="2.1 接口定义"></a>2.1 接口定义</h3><p>Lister、Watcher、ListerWatcher 分别在 <code>listwatch.go:33</code>、<code>listwatch.go:68</code>、<code>listwatch.go:106</code> 中定义：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// listwatch.go:33</span></span><br><span class="line"><span class="keyword">type</span> Lister <span class="keyword">interface</span> &#123;</span><br><span class="line">	List(options metav1.ListOptions) (runtime.Object, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// listwatch.go:68</span></span><br><span class="line"><span class="keyword">type</span> Watcher <span class="keyword">interface</span> &#123;</span><br><span class="line">	Watch(options metav1.ListOptions) (watch.Interface, <span class="type">error</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// listwatch.go:106</span></span><br><span class="line"><span class="keyword">type</span> ListerWatcher <span class="keyword">interface</span> &#123;</span><br><span class="line">	Lister</span><br><span class="line">	Watcher</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>新版本已推荐使用带 Context 的版本（<code>ListerWithContext:listwatch.go:42</code>，<code>WatcherWithContext:listwatch.go:80</code>），<code>ToListerWatcherWithContext(lw)</code> 函数（<code>listwatch.go:120</code>）负责新旧接口适配。</p>
+<h3 id="2-2-ListWatch-具体实现"><a href="#2-2-ListWatch-具体实现" class="headerlink" title="2.2 ListWatch 具体实现"></a>2.2 ListWatch 具体实现</h3><p><code>ListWatch</code> 结构体（<code>listwatch.go:193</code>）是 <code>ListerWatcher</code> 接口的具体实现：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// listwatch.go:193</span></span><br><span class="line"><span class="keyword">type</span> ListWatch <span class="keyword">struct</span> &#123;</span><br><span class="line">	ListFunc             ListFunc</span><br><span class="line">	WatchFunc            WatchFunc</span><br><span class="line">	ListWithContextFunc  ListWithContextFunc</span><br><span class="line">	WatchFuncWithContext WatchFuncWithContext</span><br><span class="line">	DisableChunking      <span class="type">bool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>工厂函数 <code>NewFilteredListWatchFromClient</code>（<code>listwatch.go:229</code>）通过传入 RESTClient、资源名、namespace 和选项修饰函数，自动生成 list 和 watch 的闭包：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// listwatch.go:230 - List 闭包</span></span><br><span class="line">listFunc := <span class="function"><span class="keyword">func</span><span class="params">(options metav1.ListOptions)</span></span> (runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">	optionsModifier(&amp;options)</span><br><span class="line">	<span class="keyword">return</span> c.Get().</span><br><span class="line">		Namespace(namespace).</span><br><span class="line">		Resource(resource).</span><br><span class="line">		VersionedParams(&amp;options, metav1.ParameterCodec).</span><br><span class="line">		Do(context.Background()).</span><br><span class="line">		Get()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// listwatch.go:239 - Watch 闭包</span></span><br><span class="line">watchFunc := <span class="function"><span class="keyword">func</span><span class="params">(options metav1.ListOptions)</span></span> (watch.Interface, <span class="type">error</span>) &#123;</span><br><span class="line">	options.Watch = <span class="literal">true</span></span><br><span class="line">	optionsModifier(&amp;options)</span><br><span class="line">	<span class="keyword">return</span> c.Get().</span><br><span class="line">		Namespace(namespace).</span><br><span class="line">		Resource(resource).</span><br><span class="line">		VersionedParams(&amp;options, metav1.ParameterCodec).</span><br><span class="line">		Watch(context.Background())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>List 闭包发起的是 GET 请求，返回全量对象列表；Watch 闭包将 <code>options.Watch = true</code> 后发起长连接请求。两者都通过 <code>VersionedParams</code> 将 ListOptions 序列化为 HTTP 查询参数。</p>
+<h2 id="3-Store-接口"><a href="#3-Store-接口" class="headerlink" title="3. Store 接口"></a>3. Store 接口</h2><p><code>Store</code> 接口（<code>store.go:41</code>）是数据存储的抽象：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// store.go:41</span></span><br><span class="line"><span class="keyword">type</span> Store <span class="keyword">interface</span> &#123;</span><br><span class="line">	Add(obj <span class="keyword">interface</span>&#123;&#125;) <span class="type">error</span></span><br><span class="line">	Update(obj <span class="keyword">interface</span>&#123;&#125;) <span class="type">error</span></span><br><span class="line">	Delete(obj <span class="keyword">interface</span>&#123;&#125;) <span class="type">error</span></span><br><span class="line">	List() []<span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">	ListKeys() []<span class="type">string</span></span><br><span class="line">	Get(obj <span class="keyword">interface</span>&#123;&#125;) (item <span class="keyword">interface</span>&#123;&#125;, exists <span class="type">bool</span>, err <span class="type">error</span>)</span><br><span class="line">	GetByKey(key <span class="type">string</span>) (item <span class="keyword">interface</span>&#123;&#125;, exists <span class="type">bool</span>, err <span class="type">error</span>)</span><br><span class="line">	Replace([]<span class="keyword">interface</span>&#123;&#125;, <span class="type">string</span>) <span class="type">error</span></span><br><span class="line">	Resync() <span class="type">error</span></span><br><span class="line">	Bookmark(rv <span class="type">string</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>ReflectorStore</code>（<code>reflector.go:71</code>）是 Reflector 使用的 Store 子集，只包含 Add&#x2F;Update&#x2F;Delete&#x2F;Replace&#x2F;Resync 五个方法。具体的实现 <code>cache</code> 结构体（<code>store.go:204</code>）包装了 <code>ThreadSafeStore</code>，而 <code>ThreadSafeStore</code> 的底层是 <code>threadSafeMap</code>（<code>thread_safe_store.go:256</code>），通过 <code>sync.RWMutex</code> 保证并发安全，键由 <code>KeyFunc</code>（默认 <code>MetaNamespaceKeyFunc</code>，生成 <code>&lt;namespace&gt;/&lt;name&gt;</code>）生成。</p>
+<h2 id="4-DeltaFIFO"><a href="#4-DeltaFIFO" class="headerlink" title="4. DeltaFIFO"></a>4. DeltaFIFO</h2><p><code>DeltaFIFO</code>（<code>delta_fifo.go:108</code>）是 producer-consumer 队列，<strong>Reflector 是生产者</strong>，<strong>Controller 是消费者</strong>。它的核心设计是：每个对象的累加器不是单一的最新对象，而是一个 <code>Deltas</code>（<code>delta_fifo.go:223</code>）—— 即 <code>Delta</code> 的切片，记录了该对象发生的所有变更。</p>
+<h3 id="4-1-数据结构"><a href="#4-1-数据结构" class="headerlink" title="4.1 数据结构"></a>4.1 数据结构</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// delta_fifo.go:108</span></span><br><span class="line"><span class="keyword">type</span> DeltaFIFO <span class="keyword">struct</span> &#123;</span><br><span class="line">	lock       sync.RWMutex</span><br><span class="line">	cond       sync.Cond</span><br><span class="line">	items      <span class="keyword">map</span>[<span class="type">string</span>]Deltas   <span class="comment">// key -&gt; 该对象的所有增量</span></span><br><span class="line">	queue      []<span class="type">string</span>            <span class="comment">// FIFO 顺序的 key 列表</span></span><br><span class="line">	synced     <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;       <span class="comment">// 初始同步完成后关闭</span></span><br><span class="line">	populated  <span class="type">bool</span>                <span class="comment">// 是否有过数据写入</span></span><br><span class="line">	initialPopulationCount <span class="type">int</span>     <span class="comment">// 首次Replace写入的对象数</span></span><br><span class="line">	keyFunc    KeyFunc</span><br><span class="line">	knownObjects KeyListerGetter   <span class="comment">// 用于检测删除（在Informer中就是indexer）</span></span><br><span class="line">	emitDeltaTypeReplaced <span class="type">bool</span></span><br><span class="line">	transformer TransformFunc</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>双结构设计：<code>items</code> 是 map 负责快速查找，<code>queue</code> 是 slice 维持 FIFO 顺序。两者通过 key 关联，一个 key 在 <code>items</code> 中当且仅当在 <code>queue</code> 中。</p>
+<h3 id="4-2-Delta-类型"><a href="#4-2-Delta-类型" class="headerlink" title="4.2 Delta 类型"></a>4.2 Delta 类型</h3><p><code>DeltaType</code>（<code>delta_fifo.go:179</code>）定义了 8 种变更类型：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// delta_fifo.go:182</span></span><br><span class="line"><span class="keyword">const</span> (</span><br><span class="line">	Added       DeltaType = <span class="string">&quot;Added&quot;</span>        <span class="comment">// 对象新增</span></span><br><span class="line">	Updated     DeltaType = <span class="string">&quot;Updated&quot;</span>       <span class="comment">// 对象更新</span></span><br><span class="line">	Deleted     DeltaType = <span class="string">&quot;Deleted&quot;</span>       <span class="comment">// 对象删除</span></span><br><span class="line">	Replaced    DeltaType = <span class="string">&quot;Replaced&quot;</span>      <span class="comment">// relist 产生的替换（需EmitDeltaTypeReplaced开启）</span></span><br><span class="line">	ReplacedAll DeltaType = <span class="string">&quot;ReplacedAll&quot;</span>   <span class="comment">// 原子替换（新FIFO）</span></span><br><span class="line">	Sync        DeltaType = <span class="string">&quot;Sync&quot;</span>          <span class="comment">// 周期性 resync</span></span><br><span class="line">	SyncAll     DeltaType = <span class="string">&quot;SyncAll&quot;</span>       <span class="comment">// 全量重新处理</span></span><br><span class="line">	Bookmark    DeltaType = <span class="string">&quot;Bookmark&quot;</span>      <span class="comment">// ResourceVersion 推进通知</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-3-核心操作"><a href="#4-3-核心操作" class="headerlink" title="4.3 核心操作"></a>4.3 核心操作</h3><p><strong>Add&#x2F;Update&#x2F;Delete</strong>（<code>delta_fifo.go:386</code>、<code>delta_fifo.go:395</code>、<code>delta_fifo.go:408</code>）：<br>三个方法都会调用 <code>queueActionLocked()</code>（<code>delta_fifo.go:482</code>），最终进入 <code>queueActionInternalLocked()</code>（<code>delta_fifo.go:491</code>）。流程如下：</p>
+<ol>
+<li>通过 <code>KeyOf</code> 计算对象的 key</li>
+<li>如果设了 <code>transformer</code>，先对对象做变换</li>
+<li>将新 Delta 追加到 <code>f.items[id]</code> 对应的 Deltas 尾部</li>
+<li>调用 <code>dedupDeltas()</code> 合并相邻的重复删除事件</li>
+<li>如果是新 key，加入 <code>f.queue</code> 尾部</li>
+<li>通过 <code>f.cond.Broadcast()</code> 唤醒等待的消费者</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// delta_fifo.go:491</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *DeltaFIFO)</span></span> queueActionInternalLocked(actionType, internalActionType DeltaType, obj <span class="keyword">interface</span>&#123;&#125;) <span class="type">error</span> &#123;</span><br><span class="line">	id, _ := f.KeyOf(obj)</span><br><span class="line">	<span class="comment">// apply transformer</span></span><br><span class="line">	oldDeltas := f.items[id]</span><br><span class="line">	newDeltas := <span class="built_in">append</span>(oldDeltas, Delta&#123;actionType, obj&#125;)</span><br><span class="line">	newDeltas = dedupDeltas(newDeltas)</span><br><span class="line">	<span class="keyword">if</span> _, exists := f.items[id]; !exists &#123;</span><br><span class="line">		f.queue = <span class="built_in">append</span>(f.queue, id)</span><br><span class="line">	&#125;</span><br><span class="line">	f.items[id] = newDeltas</span><br><span class="line">	f.cond.Broadcast()</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Replace</strong>（<code>delta_fifo.go:619</code>）：</p>
+<p>当执行全量 relist 时调用，这是 DeltaFIFO 中最复杂的方法：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// delta_fifo.go:619</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *DeltaFIFO)</span></span> Replace(list []<span class="keyword">interface</span>&#123;&#125;, _ <span class="type">string</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="comment">// 1. 对每个新对象生成 Replaced/Sync 类型的 Delta</span></span><br><span class="line">	<span class="keyword">for</span> _, item := <span class="keyword">range</span> list &#123;</span><br><span class="line">		f.queueActionInternalLocked(action, Replaced, item)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 2. 检测 f.items 中但不在新列表中的 key → 生成 Deleted Delta</span></span><br><span class="line">	<span class="keyword">for</span> k, oldItem := <span class="keyword">range</span> f.items &#123;</span><br><span class="line">		<span class="keyword">if</span> keys.Has(k) &#123; <span class="keyword">continue</span> &#125;</span><br><span class="line">		f.queueActionLocked(Deleted, DeletedFinalStateUnknown&#123;k, deletedObj&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 3. 检测 knownObjects 中但不在新列表中的 key → 同样生成 Deleted Delta</span></span><br><span class="line">	<span class="keyword">if</span> f.knownObjects != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">for</span> _, k := <span class="keyword">range</span> knownKeys &#123;</span><br><span class="line">			<span class="keyword">if</span> keys.Has(k) || <span class="built_in">len</span>(f.items[k]) &gt; <span class="number">0</span> &#123; <span class="keyword">continue</span> &#125;</span><br><span class="line">			f.queueActionLocked(Deleted, DeletedFinalStateUnknown&#123;k, deletedObj&#125;)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 4. 设置 populated，记录 initialPopulationCount</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Replace 的删除检测机制非常重要：当 Reflector 断连后重新 List，期间发生的删除事件可能丢失。通过比对全量 List 结果与本地缓存的差异，Replace 能”补偿”丢失的删除事件，将缺失的对象包装为 <code>DeletedFinalStateUnknown</code> 作为 tombstone。</p>
+<p><strong>Pop</strong>（<code>delta_fifo.go:562</code>）：</p>
+<p>消费者调用，阻塞直到有数据可用：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// delta_fifo.go:562</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(f *DeltaFIFO)</span></span> Pop(process PopProcessFunc) (<span class="keyword">interface</span>&#123;&#125;, <span class="type">error</span>) &#123;</span><br><span class="line">	f.lock.Lock()</span><br><span class="line">	<span class="keyword">defer</span> f.lock.Unlock()</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">for</span> <span class="built_in">len</span>(f.queue) == <span class="number">0</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> f.closed &#123; <span class="keyword">return</span> <span class="literal">nil</span>, ErrFIFOClosed &#125;</span><br><span class="line">			f.cond.Wait()</span><br><span class="line">		&#125;</span><br><span class="line">		id := f.queue[<span class="number">0</span>]; f.queue = f.queue[<span class="number">1</span>:]</span><br><span class="line">		<span class="comment">// 递减 initialPopulationCount，检查 synced</span></span><br><span class="line">		item := f.items[id]; <span class="built_in">delete</span>(f.items, id)</span><br><span class="line">		err := process(item, isInInitialList)</span><br><span class="line">		<span class="keyword">return</span> item, err</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>Pop</code> 在加锁状态下调用 process 函数，确保队列操作与消费者处理的原子性。当 <code>populated &amp;&amp; initialPopulationCount == 0</code> 时，<code>f.synced</code> 通道关闭，标识初始同步完成。</p>
+<h2 id="5-Reflector"><a href="#5-Reflector" class="headerlink" title="5. Reflector"></a>5. Reflector</h2><p><code>Reflector</code>（<code>reflector.go:106</code>）是整个 list &amp; watch 机制的核心引擎。它通过 <code>ListerWatcher</code> 与 API Server 交互，将数据同步到 <code>ReflectorStore</code>（通常是 DeltaFIFO）。</p>
+<h3 id="5-1-结构体"><a href="#5-1-结构体" class="headerlink" title="5.1 结构体"></a>5.1 结构体</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:106</span></span><br><span class="line"><span class="keyword">type</span> Reflector <span class="keyword">struct</span> &#123;</span><br><span class="line">	store               ReflectorStore            <span class="comment">// 目标存储（通常是 DeltaFIFO）</span></span><br><span class="line">	listerWatcher       ListerWatcherWithContext  <span class="comment">// 执行 List/Watch</span></span><br><span class="line">	resyncPeriod        time.Duration</span><br><span class="line">	lastSyncResourceVersion <span class="type">string</span>                <span class="comment">// 最近一次同步的 ResourceVersion</span></span><br><span class="line">	isLastSyncResourceVersionUnavailable <span class="type">bool</span>      <span class="comment">// 前一次因过期不可用</span></span><br><span class="line">	watchErrorHandler   WatchErrorHandlerWithContext</span><br><span class="line">	WatchListPageSize   <span class="type">int64</span></span><br><span class="line">	ShouldResync        <span class="function"><span class="keyword">func</span><span class="params">()</span></span> <span class="type">bool</span></span><br><span class="line">	useWatchList        <span class="type">bool</span>                      <span class="comment">// 是否使用 WatchList 流模式</span></span><br><span class="line">	minWatchTimeout     time.Duration              <span class="comment">// 默认 5min</span></span><br><span class="line">	maxWatchTimeout     time.Duration              <span class="comment">// 默认 10min</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-主循环：ListAndWatchWithContext"><a href="#5-2-主循环：ListAndWatchWithContext" class="headerlink" title="5.2 主循环：ListAndWatchWithContext"></a>5.2 主循环：ListAndWatchWithContext</h3><p><code>ListAndWatchWithContext()</code>（<code>reflector.go:470</code>）是 Reflector 的入口：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:470</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> ListAndWatchWithContext(ctx context.Context) <span class="type">error</span> &#123;</span><br><span class="line">	fallbackToList := !r.useWatchList</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> r.useWatchList &#123;</span><br><span class="line">		w, err = r.watchList(ctx)       <span class="comment">// 尝试 WatchList 流模式</span></span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			fallbackToList = <span class="literal">true</span>       <span class="comment">// 失败则回退到传统模式</span></span><br><span class="line">			w = <span class="literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> fallbackToList &#123;</span><br><span class="line">		err = r.list(ctx)               <span class="comment">// 传统 List 全量</span></span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123; <span class="keyword">return</span> err &#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> r.watchWithResync(ctx, w)    <span class="comment">// 进入 Watch 循环</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>两种模式：</p>
+<ul>
+<li><strong>传统模式</strong>：先 <code>list()</code> 全量拉取，再 <code>watchWithResync()</code> 增量监听</li>
+<li><strong>WatchList 流模式</strong>：通过一次流式连接获取一致快照 + 持续增量</li>
+</ul>
+<h3 id="5-3-list-—-全量拉取"><a href="#5-3-list-—-全量拉取" class="headerlink" title="5.3 list() — 全量拉取"></a>5.3 list() — 全量拉取</h3><p><code>list()</code>（<code>reflector.go:674</code>）通过分页（pager）从 API Server 拉取全量对象。关键流程：</p>
+<ol>
+<li>通过 <code>relistResourceVersion()</code>（<code>reflector.go:1116</code>）确定 ResourceVersion：<ul>
+<li>首次调用返回 <code>&quot;0&quot;</code>（从 watch cache 读取）</li>
+<li>上次过期则返回 <code>&quot;&quot;</code>（最新一致读，直连 etcd）</li>
+<li>否则返回上一次的 <code>lastSyncResourceVersion</code></li>
+</ul>
+</li>
+<li>使用 pager 分页拉取，支持 <code>WatchListPageSize</code> 控制分页大小</li>
+<li>若返回 <code>Expired</code> 或 <code>TooLargeResourceVersion</code> 错误，用 <code>ResourceVersion=&quot;&quot;</code> 重试</li>
+<li>通过 <code>meta.ExtractListWithAlloc()</code> 提取对象列表</li>
+<li>调用 <code>r.syncWith(items, resourceVersion)</code> 即 <code>r.store.Replace(found, resourceVersion)</code> 写入 DeltaFIFO</li>
+<li>更新 <code>lastSyncResourceVersion</code></li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:674</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> list(ctx context.Context) <span class="type">error</span> &#123;</span><br><span class="line">	options := metav1.ListOptions&#123;ResourceVersion: r.relistResourceVersion()&#125;</span><br><span class="line">	pager := pager.New(pager.SimplePageFunc(<span class="function"><span class="keyword">func</span><span class="params">(opts metav1.ListOptions)</span></span> (runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> r.listerWatcher.ListWithContext(ctx, opts)</span><br><span class="line">	&#125;))</span><br><span class="line">	<span class="comment">// 分页策略选择</span></span><br><span class="line">	<span class="keyword">switch</span> &#123;</span><br><span class="line">	<span class="keyword">case</span> r.WatchListPageSize != <span class="number">0</span>:</span><br><span class="line">		pager.PageSize = r.WatchListPageSize</span><br><span class="line">	<span class="keyword">case</span> r.paginatedResult:</span><br><span class="line">		<span class="comment">// 保持默认分页</span></span><br><span class="line">	<span class="keyword">case</span> options.ResourceVersion != <span class="string">&quot;&quot;</span> &amp;&amp; options.ResourceVersion != <span class="string">&quot;0&quot;</span>:</span><br><span class="line">		pager.PageSize = <span class="number">0</span> <span class="comment">// 关闭分页，从 watch cache 读取</span></span><br><span class="line">	&#125;</span><br><span class="line">	list, paginatedResult, err = pager.ListWithAlloc(context.Background(), options)</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	<span class="keyword">if</span> err := r.syncWith(items, resourceVersion); err != <span class="literal">nil</span> &#123; <span class="keyword">return</span> err &#125;</span><br><span class="line">	r.setLastSyncResourceVersion(resourceVersion)</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分页逻辑的关键在于：当 <code>ResourceVersion != &quot;&quot; &amp;&amp; != &quot;0&quot;</code> 时关闭分页，强制从 watch cache 读取，避免对 etcd 的 thundering herd 问题。</p>
+<h3 id="5-4-watch-—-增量监听"><a href="#5-4-watch-—-增量监听" class="headerlink" title="5.4 watch() — 增量监听"></a>5.4 watch() — 增量监听</h3><p><code>watch()</code>（<code>reflector.go:561</code>）是持续监听的循环：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:561</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> watch(ctx context.Context, w watch.Interface, resyncerrc <span class="keyword">chan</span> <span class="type">error</span>) <span class="type">error</span> &#123;</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> w == <span class="literal">nil</span> &#123;</span><br><span class="line">			timeoutSeconds := r.minWatchTimeout + random(r.maxWatchTimeout - r.minWatchTimeout)</span><br><span class="line">			options := metav1.ListOptions&#123;</span><br><span class="line">				ResourceVersion:    r.LastSyncResourceVersion(),</span><br><span class="line">				TimeoutSeconds:     &amp;timeoutSeconds,</span><br><span class="line">				AllowWatchBookmarks: <span class="literal">true</span>,</span><br><span class="line">			&#125;</span><br><span class="line">			w, err = r.listerWatcher.WatchWithContext(ctx, options)</span><br><span class="line">		&#125;</span><br><span class="line">		err = handleWatch(ctx, start, w, r.store, ...)</span><br><span class="line">		w = <span class="literal">nil</span></span><br><span class="line">		<span class="comment">// Expired → 重试; 429 → backoff; InternalError → retry</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关键设计：</p>
+<ul>
+<li><code>AllowWatchBookmarks: true</code>：开启 bookmark 机制，服务器定期推送 ResourceVersion，避免因无事件导致长连接超时</li>
+<li><code>TimeoutSeconds</code> 随机在 <code>[5min, 10min]</code> 范围内，避免所有 watcher 同时超时重建</li>
+<li>410 Expired 错误 → 回到外层重新 <code>list()</code>；429 TooManyRequests → backoff 后继续；InternalError → 有限次重试</li>
+</ul>
+<p>backoff 参数（<code>reflector.go:62</code>）：</p>
+<ul>
+<li>初始间隔 800ms，最大间隔 30s</li>
+<li>2 分钟无错后重置，乘数 2.0，抖动 1.0</li>
+</ul>
+<h3 id="5-5-handleAnyWatch-—-事件处理"><a href="#5-5-handleAnyWatch-—-事件处理" class="headerlink" title="5.5 handleAnyWatch() — 事件处理"></a>5.5 handleAnyWatch() — 事件处理</h3><p><code>handleAnyWatch()</code>（<code>reflector.go:972</code>）处理 watch 通道的事件并写入 store：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:1037</span></span><br><span class="line"><span class="keyword">switch</span> event.Type &#123;</span><br><span class="line"><span class="keyword">case</span> watch.Added:</span><br><span class="line">	store.Add(event.Object)</span><br><span class="line"><span class="keyword">case</span> watch.Modified:</span><br><span class="line">	store.Update(event.Object)</span><br><span class="line"><span class="keyword">case</span> watch.Deleted:</span><br><span class="line">	store.Delete(event.Object)</span><br><span class="line"><span class="keyword">case</span> watch.Bookmark:</span><br><span class="line">	<span class="keyword">if</span> meta.GetAnnotations()[<span class="string">&quot;k8s.io/initial-events-end&quot;</span>] == <span class="string">&quot;true&quot;</span> &#123;</span><br><span class="line">		watchListBookmarkReceived = <span class="literal">true</span>   <span class="comment">// WatchList 结束标记</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> bookmarkStore, ok := store.(ReflectorBookmarkStore); ok &#123;</span><br><span class="line">		bookmarkStore.Bookmark(resourceVersion)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-6-WatchList-流模式（KEP-3157）"><a href="#5-6-WatchList-流模式（KEP-3157）" class="headerlink" title="5.6 WatchList 流模式（KEP-3157）"></a>5.6 WatchList 流模式（KEP-3157）</h3><p>WatchList（<code>reflector.go:804</code>）是 Kubernetes 1.31+ 引入的新特性，通过一次流式连接完成全量同步 + 增量监听：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:854</span></span><br><span class="line">options := metav1.ListOptions&#123;</span><br><span class="line">	ResourceVersion:      lastKnownRV,</span><br><span class="line">	AllowWatchBookmarks:  <span class="literal">true</span>,</span><br><span class="line">	SendInitialEvents:    ptr.To(<span class="literal">true</span>),</span><br><span class="line">	ResourceVersionMatch: metav1.ResourceVersionMatchNotOlderThan,</span><br><span class="line">	TimeoutSeconds:       &amp;timeoutSeconds,</span><br><span class="line">&#125;</span><br><span class="line">w, err = r.listerWatcher.WatchWithContext(ctx, options)</span><br></pre></td></tr></table></figure>
+
+<p>流程：</p>
+<ol>
+<li>建立 watch 流，设置 <code>SendInitialEvents: true</code> 和 <code>ResourceVersionMatchNotOlderThan</code></li>
+<li>服务器依次发送所有对象的 <code>Added</code> 事件（合成事件）</li>
+<li>服务器发送带 <code>k8s.io/initial-events-end</code> 注解的 <code>Bookmark</code> 事件，标识初始快照完成</li>
+<li>Reflector 调用 <code>r.store.Replace(temporaryStore.List(), resourceVersion)</code> 替换存储</li>
+<li><strong>复用同一 watch 流</strong> 继续接收后续增量（<code>stopWatcher = false</code> 避免关闭连接）</li>
+</ol>
+<p>与传统模式对比：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>传统模式 (list+watch)</th>
+<th>WatchList 流模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全量同步</td>
+<td>分页 GET 请求，可能请求 etcd</td>
+<td>流式 Watch，常驻 watch cache</td>
+</tr>
+<tr>
+<td>一致性</td>
+<td>分页请求非原子，可能看到中间态</td>
+<td>单流原子快照，一致性保证</td>
+</tr>
+<tr>
+<td>服务器开销</td>
+<td>大量 GET + 分页对 etcd 的压力</td>
+<td>单一长连接，资源消耗小</td>
+</tr>
+<tr>
+<td>启用条件</td>
+<td>默认行为</td>
+<td><code>WatchListClient</code> 特性门控 + API Server 支持</td>
+</tr>
+</tbody></table>
+<h3 id="5-7-运行循环"><a href="#5-7-运行循环" class="headerlink" title="5.7 运行循环"></a>5.7 运行循环</h3><p><code>RunWithContext()</code>（<code>reflector.go:416</code>）是外层循环，持续调用 <code>ListAndWatchWithContext</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// reflector.go:416</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> RunWithContext(ctx context.Context) &#123;</span><br><span class="line">	r.delayHandler.Until(ctx, <span class="literal">true</span>, <span class="literal">true</span>, <span class="function"><span class="keyword">func</span><span class="params">(ctx context.Context)</span></span> (<span class="type">bool</span>, <span class="type">error</span>) &#123;</span><br><span class="line">		<span class="keyword">if</span> err := r.ListAndWatchWithContext(ctx); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			r.watchErrorHandler(ctx, r, err)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span>, <span class="literal">nil</span>  <span class="comment">// 永不退出，持续重试</span></span><br><span class="line">	&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="6-ResourceVersion-的作用"><a href="#6-ResourceVersion-的作用" class="headerlink" title="6. ResourceVersion 的作用"></a>6. ResourceVersion 的作用</h2><p>ResourceVersion 是 Kubernetes 乐观并发控制的核心机制，在 list &amp; watch 中扮演关键角色：</p>
+<ul>
+<li><strong>List 时</strong>：<code>relistResourceVersion()</code>（<code>reflector.go:1116</code>）决定拉取版本：<ul>
+<li><code>&quot;0&quot;</code>：从 watch cache 读取（首次）</li>
+<li><code>&quot;&quot;</code>：一致读，直查 etcd（前一次过期后）</li>
+<li>具体值：从指定版本读取（包含该版本及之后的数据）</li>
+</ul>
+</li>
+<li><strong>Watch 时</strong>：从 <code>LastSyncResourceVersion</code> 开始监听，确保不丢事件</li>
+<li><strong>Expired（410）</strong>：ResourceVersion 太旧，需要重新 list</li>
+<li><strong>Bookmark 事件</strong>：服务器推送最新 ResourceVersion，使 watcher 安全重连</li>
+</ul>
+<h2 id="7-总结"><a href="#7-总结" class="headerlink" title="7. 总结"></a>7. 总结</h2><p>本文剖析了 client-go 数据采集管道的两个核心组件：</p>
+<ol>
+<li><strong>ListerWatcher</strong> — 数据源抽象，封装与 API Server 的 List&#x2F;Watch 交互</li>
+<li><strong>Reflector</strong> — 核心引擎，通过 list+watch 或 watchList 将数据同步到 DeltaFIFO</li>
+<li><strong>DeltaFIFO</strong> — 变更日志队列，以 Deltas 形式记录每个对象的所有变更，并通过 <code>knownObjects</code> 实现删除检测补偿</li>
+</ol>
+<p>至此，数据从 API Server 流入了 DeltaFIFO。下一篇文章将介绍 Informer 和 Indexer，看消费者如何从 DeltaFIFO 中取出数据并构建本地缓存。</p>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+  <section id="comments">
+    <script src="https://giscus.app/client.js"
+            data-repo="fengz63/fengz63.github.io"
+            data-repo-id="R_kgDONkh1Vg"
+            data-category="Q&amp;A"
+            data-category-id="DIC_kwDONkh1Vs4Cuqet"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="zh-CN"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Deployed by <a href="https://github.com/kaedea/notion-down" target="_blank">notion-down</a> and
+    Theme by <a href="https://github.com/kaedea/hexo-theme-hacker" target="_blank">hexo-theme-hacker</a>
+    </br>
+    
+    &copy; 2026 fengcode
+    
+  </p>
+</footer>
+    
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'G-J38N5N288S', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+  </div>
+</div>
+</body>
+</html>
