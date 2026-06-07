@@ -33,12 +33,10 @@ class ImageViewer {
 
     bindEvents() {
         // 绑定文章图片点击事件
-        document.addEventListener('DOMContentLoaded', () => {
-            const images = document.querySelectorAll('.article-content img, .featured-media img');
-            images.forEach(img => {
-                img.addEventListener('click', (e) => {
-                    this.openViewer(e.target);
-                });
+        const images = document.querySelectorAll('.article-content img, .featured-media img');
+        images.forEach(img => {
+            img.addEventListener('click', (e) => {
+                this.openViewer(e.target);
             });
         });
 
