@@ -75,6 +75,85 @@
 
   
     
+    <h3 class="article-title"><a href="/article/af5b27098445/"><span>kube-apiserver 源码解读（一）整体架构解析</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/af5b27098445/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-06-13T08:00:00.000Z">
+          2026-06-13
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>Kubernetes API Server（kube-apiserver）是整个 Kubernetes 控制平面的<strong>核心入口</strong>。所有对集群状态的读写操作——<code>kubectl</code> 命令、控制器调谐、Pod 调度——最终都汇聚到 apiserver。它承担了以下关键职责：</p>
+<ul>
+<li><strong>RESTful API 网关</strong>：提供 HTTP(S) 接口，支持所有 Kubernetes 资源的 CRUD + Watch</li>
+<li><strong>认证与授权</strong>：验证请求者身份，检查操作权限</li>
+<li><strong>准入控制</strong>：在持久化前对资源进行策略校验和注入</li>
+<li><strong>存储代理</strong>：将资源对象序列化后写入 etcd</li>
+<li><strong>聚合层与扩展</strong>：支持 API 聚合（Aggregator）和自定义资源（CRD）</li>
+</ul>
+<p>从代码架构上来看，kube-apiserver <strong>并不是一个单体服务</strong>，而是三个 <code>GenericAPIServer</code> 实例组成的<strong>委托链</strong>，每个实例只关心自己职责范围内的请求，处理不了的委托给下一个。</p>
+        
+          <p><a class="excerpt-btn" href="/article/af5b27098445/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+    <div class="article-meta pull-right">
+      <span>
+        <i class="icon-comments"></i>
+        <span>
+          <a href="/article/af5b27098445/#comment">评论</a>
+        </span>
+      </span>
+    </div>
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/e306632d0a83/"><span>广东之行</span></a></h3>
     
   
@@ -702,77 +781,6 @@
         <i class="icon-comments"></i>
         <span>
           <a href="/article/f38773245466/#comment">评论</a>
-        </span>
-      </span>
-    </div>
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/2f7c16779029/"><span>夕阳</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/2f7c16779029/" rel="bookmark">
-        <time class="entry-date published" datetime="2025-08-15T04:53:28.000Z">
-          2025-08-15
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <h2 id="🌇-今日暮色"><a href="#🌇-今日暮色" class="headerlink" title="🌇 今日暮色"></a>🌇 今日暮色</h2><p>周五的夕阳总带着特别的温柔，18:00准时合上电脑前往餐厅，在这个难得的准时下班的日子，我坐在餐厅里吃着晚餐，看着窗外的天空从白色慢慢变成了红色，夕阳的余晖在我的脑海中留下了一个美好的记忆。</p>
-        
-          <p><a class="excerpt-btn" href="/article/2f7c16779029/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/生活/">生活</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/生活/">生活</a>
-    </span>
-    
-
-    </div>
-
-    
-    <div class="article-meta pull-right">
-      <span>
-        <i class="icon-comments"></i>
-        <span>
-          <a href="/article/2f7c16779029/#comment">评论</a>
         </span>
       </span>
     </div>
