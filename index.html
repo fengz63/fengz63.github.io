@@ -75,6 +75,78 @@
 
   
     
+    <h3 class="article-title"><a href="/article/c872800ff8c1/"><span>kube-apiserver 源码解读（二）启动流程详解</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/c872800ff8c1/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-06-14T02:00:00.000Z">
+          2026-06-14
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>上一篇我们从宏观视角分析了 kube-apiserver 的三层委托链架构和核心能力。本篇深入到<strong>启动流程</strong>——从 <code>main()</code> 函数开始，追踪一个 kube-apiserver 进程从命令行参数解析到 HTTPS 服务就绪的完整路径。</p>
+<p>启动流程的核心代码集中在以下几个文件中：</p>
+        
+          <p><a class="excerpt-btn" href="/article/c872800ff8c1/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+    <div class="article-meta pull-right">
+      <span>
+        <i class="icon-comments"></i>
+        <span>
+          <a href="/article/c872800ff8c1/#comment">评论</a>
+        </span>
+      </span>
+    </div>
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/af5b27098445/"><span>kube-apiserver 源码解读（一）整体架构解析</span></a></h3>
     
   
@@ -710,77 +782,6 @@
         <i class="icon-comments"></i>
         <span>
           <a href="/article/16b07ccc9216/#comment">评论</a>
-        </span>
-      </span>
-    </div>
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/f38773245466/"><span>client-go 源码解读（一）总述</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/f38773245466/" rel="bookmark">
-        <time class="entry-date published" datetime="2025-08-18T05:37:33.000Z">
-          2025-08-18
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>最近工作中频繁用到 Informer、Controller 等相关组件，以及 List、Watch 等 API，为了更好地理解其工作原理，决定对 client-go 源码进行详细解读。</p>
-        
-          <p><a class="excerpt-btn" href="/article/f38773245466/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/技术/">技术</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
-    </span>
-    
-
-    </div>
-
-    
-    <div class="article-meta pull-right">
-      <span>
-        <i class="icon-comments"></i>
-        <span>
-          <a href="/article/f38773245466/#comment">评论</a>
         </span>
       </span>
     </div>

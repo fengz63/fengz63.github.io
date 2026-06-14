@@ -1,0 +1,436 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>kube-apiserver 源码解读（二）启动流程详解 | Feng&#39;s Tech Blogs | 代码与生活</title>
+
+  
+  <meta name="author" content="fengcode">
+  
+
+  
+  <meta name="description" content="some notes of my life">
+  
+
+  
+  
+  <meta name="keywords" content="技术,Kubernetes源码解读">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="kube-apiserver 源码解读（二）启动流程详解"/>
+
+  <meta property="og:site_name" content="Feng&#39;s Tech Blogs"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Feng&#39;s Tech Blogs" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  
+  <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
+  <script src="/js/pangu-407.min.js"></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    pangu.autoSpacingPage();
+  });
+</script>
+
+<!-- 添加图片查看器脚本 -->
+<script src="/js/image-viewer.js"></script>
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">Feng&#39;s Tech Blogs</a>
+    </h1>
+    <p class="site-description">代码与生活</p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/archives">归档</a></li>
+      
+        <li><a href="/categories">分类</a></li>
+      
+        <li><a href="/about">关于</a></li>
+      
+        <li><a href="/atom.xml">订阅</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>kube-apiserver 源码解读（二）启动流程详解</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/c872800ff8c1/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-06-14T02:00:00.000Z">
+          2026-06-14
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        
+
+<script type="text/javascript">
+    function convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+    window.onscroll = function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if (scrollTop > convertRemToPixels(40)) {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'visible';
+        } else {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'hidden';
+        }
+    }
+</script>
+
+
+<div id="toc" class="toc-article">
+      <div class="toc-content">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E5%BC%95%E8%A8%80"><span class="toc-text">1. 引言</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%85%A5%E5%8F%A3%EF%BC%9Amain-%E5%87%BD%E6%95%B0"><span class="toc-text">2. 入口：main() 函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-Command-%E6%9E%84%E5%BB%BA%EF%BC%9ANewAPIServerCommand"><span class="toc-text">3. Command 构建：NewAPIServerCommand()</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-options-NewServerRunOptions-%E2%80%94-%E9%80%89%E9%A1%B9%E7%9A%84%E9%BB%98%E8%AE%A4%E5%80%BC"><span class="toc-text">3.1 options.NewServerRunOptions() — 选项的默认值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-s-Complete-ctx-%E2%80%94-%E9%80%89%E9%A1%B9%E8%A1%A5%E5%85%A8"><span class="toc-text">3.2 s.Complete(ctx) — 选项补全</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-completedOptions-Validate-%E2%80%94-%E9%AA%8C%E8%AF%81"><span class="toc-text">3.3 completedOptions.Validate() — 验证</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-Config-%E6%9E%84%E5%BB%BA%EF%BC%9ANewConfig"><span class="toc-text">4. Config 构建：NewConfig()</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-BuildGenericConfig-%E2%80%94-%E5%85%B1%E4%BA%AB%E9%85%8D%E7%BD%AE%E5%B7%A5%E5%8E%82"><span class="toc-text">4.1 BuildGenericConfig() — 共享配置工厂</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E5%AD%90-Config-%E7%9A%84%E6%9E%84%E5%BB%BA%E7%AD%96%E7%95%A5"><span class="toc-text">4.2 子 Config 的构建策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-Complete-%E2%80%94-Config-%E8%A1%A5%E5%85%A8"><span class="toc-text">4.3 Complete() — Config 补全</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-CreateServerChain-%E2%80%94-%E6%9E%84%E5%BB%BA%E4%B8%89%E5%B1%82%E5%A7%94%E6%89%98%E9%93%BE"><span class="toc-text">5. CreateServerChain() — 构建三层委托链</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-KubeAPIServer-%E7%9A%84%E6%9E%84%E9%80%A0%E7%BB%86%E8%8A%82"><span class="toc-text">5.1 KubeAPIServer 的构造细节</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-GenericAPIServer-New-%E2%80%94-%E9%80%9A%E7%94%A8%E6%B5%81%E7%A8%8B"><span class="toc-text">6. GenericAPIServer.New() — 通用流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#HandlerChain-%E7%9A%84%E6%9E%84%E5%BB%BA"><span class="toc-text">HandlerChain 的构建</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-PrepareRun-%E2%80%94-%E5%B0%B1%E7%BB%AA%E5%87%86%E5%A4%87"><span class="toc-text">7. PrepareRun() — 就绪准备</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-Run-%E2%80%94-%E5%90%AF%E5%8A%A8-HTTPS-%E6%9C%8D%E5%8A%A1"><span class="toc-text">8. Run() — 启动 HTTPS 服务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-NonBlockingRun-%E2%80%94-%E5%BC%82%E6%AD%A5%E5%90%AF%E5%8A%A8"><span class="toc-text">8.1 NonBlockingRun — 异步启动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-PostStartHooks-%E2%80%94-%E5%90%AF%E5%8A%A8%E5%90%8E%E9%92%A9%E5%AD%90"><span class="toc-text">8.2 PostStartHooks — 启动后钩子</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E4%BC%98%E9%9B%85%E5%85%B3%E9%97%AD%EF%BC%88Graceful-Shutdown%EF%BC%89"><span class="toc-text">8.3 优雅关闭（Graceful Shutdown）</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-%E6%9C%AC%E7%AF%87%E6%80%BB%E7%BB%93"><span class="toc-text">9. 本篇总结</span></a></li></ol>
+      </div>
+</div>
+<style>
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+
+
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>上一篇我们从宏观视角分析了 kube-apiserver 的三层委托链架构和核心能力。本篇深入到<strong>启动流程</strong>——从 <code>main()</code> 函数开始，追踪一个 kube-apiserver 进程从命令行参数解析到 HTTPS 服务就绪的完整路径。</p>
+<p>启动流程的核心代码集中在以下几个文件中：</p>
+<span id="more"></span>
+
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cmd/kube-apiserver/apiserver.go</code></td>
+<td><code>main()</code> 入口，仅 36 行</td>
+</tr>
+<tr>
+<td><code>cmd/kube-apiserver/app/server.go</code></td>
+<td>Command 创建、<code>Run()</code>、<code>CreateServerChain()</code></td>
+</tr>
+<tr>
+<td><code>cmd/kube-apiserver/app/config.go</code></td>
+<td>配置组装：<code>NewConfig()</code> + <code>Complete()</code></td>
+</tr>
+<tr>
+<td><code>cmd/kube-apiserver/app/options/options.go</code></td>
+<td><code>ServerRunOptions</code> 结构定义与默认值</td>
+</tr>
+<tr>
+<td><code>pkg/controlplane/apiserver/config.go</code></td>
+<td><code>BuildGenericConfig()</code> — 生成共享的 <code>genericConfig</code></td>
+</tr>
+<tr>
+<td><code>staging/src/k8s.io/apiserver/pkg/server/config.go</code></td>
+<td><code>GenericAPIServer</code> 的 <code>New()</code>、<code>DefaultBuildHandlerChain()</code></td>
+</tr>
+<tr>
+<td><code>staging/src/k8s.io/apiserver/pkg/server/genericapiserver.go</code></td>
+<td><code>PrepareRun()</code>、<code>RunWithContext()</code></td>
+</tr>
+</tbody></table>
+<p>完整的调用链如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">main()</span><br><span class="line">  │</span><br><span class="line">  └─ NewAPIServerCommand()              创建 cobra.Command</span><br><span class="line">       │</span><br><span class="line">       └─ RunE (cobra 回调)</span><br><span class="line">            ├─ s.Complete(ctx)          补全选项</span><br><span class="line">            ├─ completedOptions.Validate()   验证</span><br><span class="line">            └─ Run(ctx, completedOptions)</span><br><span class="line">                 │</span><br><span class="line">                 ├─ NewConfig(opts)          构建 Config（含三个子 config）</span><br><span class="line">                 ├─ config.Complete()        补全配置</span><br><span class="line">                 ├─ CreateServerChain()      创建三层 Server</span><br><span class="line">                 ├─ server.PrepareRun()      安装 OpenAPI、健康检查</span><br><span class="line">                 └─ prepared.Run(ctx)        启动 HTTPS 监听 + PostStartHooks</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="2-入口：main-函数"><a href="#2-入口：main-函数" class="headerlink" title="2. 入口：main() 函数"></a>2. 入口：<code>main()</code> 函数</h2><p><code>cmd/kube-apiserver/apiserver.go:32</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    command := app.NewAPIServerCommand()</span><br><span class="line">    code := cli.Run(command)</span><br><span class="line">    os.Exit(code)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>只有三行：</p>
+<ol>
+<li><strong><code>app.NewAPIServerCommand()</code></strong> — 创建 Cobra Command，绑定所有命令行参数</li>
+<li><strong><code>cli.Run(command)</code></strong> — 来自 <code>k8s.io/component-base/cli</code>，负责启动流程，包括信号处理（SIGTERM&#x2F;SIGINT）、日志初始化、调用 <code>RunE</code></li>
+<li><strong><code>os.Exit(code)</code></strong> — 退出</li>
+</ol>
+<p><code>cli.Run</code> 并不是简单的 <code>cmd.Execute()</code>，它在底层做了几件额外的事情：</p>
+<ul>
+<li>调用 <code>PersistentPreRunE</code> 初始化全局组件注册表</li>
+<li>捕获 <code>os.Signal</code> 并通过 <code>context.Context</code> 传递</li>
+<li>统一处理错误输出和退出码</li>
+</ul>
+<hr>
+<h2 id="3-Command-构建：NewAPIServerCommand"><a href="#3-Command-构建：NewAPIServerCommand" class="headerlink" title="3. Command 构建：NewAPIServerCommand()"></a>3. Command 构建：<code>NewAPIServerCommand()</code></h2><p><code>cmd/kube-apiserver/app/server.go:70</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewAPIServerCommand</span><span class="params">()</span></span> *cobra.Command &#123;</span><br><span class="line">    s := options.NewServerRunOptions()</span><br><span class="line">    ctx := genericapiserver.SetupSignalContext()</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    cmd := &amp;cobra.Command&#123;</span><br><span class="line">        Use: <span class="string">&quot;kube-apiserver&quot;</span>,</span><br><span class="line">        RunE: <span class="function"><span class="keyword">func</span><span class="params">(cmd *cobra.Command, args []<span class="type">string</span>)</span></span> <span class="type">error</span> &#123;</span><br><span class="line">            verflag.PrintAndExitIfRequested()</span><br><span class="line">            <span class="comment">// 激活日志</span></span><br><span class="line">            logsapi.ValidateAndApply(s.Logs, featureGate)</span><br><span class="line">            <span class="comment">// 补全选项</span></span><br><span class="line">            completedOptions, err := s.Complete(ctx)</span><br><span class="line">            <span class="comment">// 验证</span></span><br><span class="line">            <span class="keyword">if</span> errs := completedOptions.Validate(); <span class="built_in">len</span>(errs) != <span class="number">0</span> &#123; ... &#125;</span><br><span class="line">            <span class="comment">// 启动</span></span><br><span class="line">            <span class="keyword">return</span> Run(ctx, completedOptions)</span><br><span class="line">        &#125;,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 绑定 flags</span></span><br><span class="line">    namedFlagSets := s.Flags()</span><br><span class="line">    <span class="keyword">for</span> _, f := <span class="keyword">range</span> namedFlagSets.FlagSets &#123;</span><br><span class="line">        fs.AddFlagSet(f)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> cmd</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关键步骤：</p>
+<h3 id="3-1-options-NewServerRunOptions-—-选项的默认值"><a href="#3-1-options-NewServerRunOptions-—-选项的默认值" class="headerlink" title="3.1 options.NewServerRunOptions() — 选项的默认值"></a>3.1 <code>options.NewServerRunOptions()</code> — 选项的默认值</h3><p><code>cmd/kube-apiserver/app/options/options.go:66</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewServerRunOptions</span><span class="params">()</span></span> *ServerRunOptions &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;ServerRunOptions&#123;</span><br><span class="line">        Options: *controlplaneapiserver.NewOptions(),</span><br><span class="line">        Extra: Extra&#123;</span><br><span class="line">            EndpointReconcilerType: <span class="type">string</span>(reconcilers.LeaseEndpointReconcilerType),</span><br><span class="line">            KubeletConfig:          kubeletclient.KubeletClientConfig&#123;...&#125;,</span><br><span class="line">            ServiceNodePortRange:   kubeoptions.DefaultServiceNodePortRange,</span><br><span class="line">            MasterCount:            <span class="number">1</span>,</span><br><span class="line">        &#125;,</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>内部 <code>controlplaneapiserver.NewOptions()</code>（<code>pkg/controlplane/apiserver/options/options.go:112</code>）创建了一整套子选项对象：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewOptions</span><span class="params">()</span></span> *Options &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;Options&#123;</span><br><span class="line">        GenericServerRunOptions: genericoptions.NewServerRunOptions(),</span><br><span class="line">        Etcd:                    genericoptions.NewEtcdOptions(),</span><br><span class="line">        SecureServing:           kubeoptions.NewSecureServingOptions(),</span><br><span class="line">        Audit:                   genericoptions.NewAuditOptions(),</span><br><span class="line">        Features:                genericoptions.NewFeatureOptions(),</span><br><span class="line">        Admission:               kubeoptions.NewAdmissionOptions(),</span><br><span class="line">        Authentication:          kubeoptions.NewBuiltInAuthenticationOptions().WithAll(),</span><br><span class="line">        Authorization:           kubeoptions.NewBuiltInAuthorizationOptions(),</span><br><span class="line">        APIEnablement:           genericoptions.NewAPIEnablementOptions(),</span><br><span class="line">        EgressSelector:          genericoptions.NewEgressSelectorOptions(),</span><br><span class="line">        Metrics:                 genericoptions.NewMetricsOptions(),</span><br><span class="line">        Logs:                    genericoptions.NewLogsOptions(),</span><br><span class="line">        Traces:                  genericoptions.NewTracingOptions(),</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>每个子选项都有对应的 <code>ApplyTo()</code> 方法，后续会将值写入 <code>genericapiserver.Config</code>。</p>
+<h3 id="3-2-s-Complete-ctx-—-选项补全"><a href="#3-2-s-Complete-ctx-—-选项补全" class="headerlink" title="3.2 s.Complete(ctx) — 选项补全"></a>3.2 <code>s.Complete(ctx)</code> — 选项补全</h3><p><code>pkg/controlplane/apiserver/options/options.go:221</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Options)</span></span> Complete(ctx context.Context) (CompletedOptions, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="comment">// 默认监听地址</span></span><br><span class="line">    <span class="keyword">if</span> err := s.DefaultAdvertiseAddress(ctx, s.SecureServing); err != <span class="literal">nil</span> &#123; ... &#125;</span><br><span class="line">    <span class="comment">// 自动生成自签名证书（未指定时）</span></span><br><span class="line">    <span class="keyword">if</span> err := s.SecureServing.MaybeDefaultWithSelfSignedCerts(...); err != <span class="literal">nil</span> &#123; ... &#125;</span><br><span class="line">    <span class="comment">// ServiceAccount 选项补全</span></span><br><span class="line">    s.completeServiceAccountOptions()</span><br><span class="line">    <span class="comment">// RuntimeConfig key 规范化</span></span><br><span class="line">    s.APIEnablement.RuntimeConfig = normalizeRuntimeConfigKeys(...)</span><br><span class="line">    <span class="comment">// 递归 Complete 所有子选项</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>两项关键操作：</p>
+<ul>
+<li><code>DefaultAdvertiseAddress</code>：如果未指定 <code>--advertise-address</code>，自动推断本机 IP</li>
+<li><code>MaybeDefaultWithSelfSignedCerts</code>：开发环境未指定证书时，生成自签名证书</li>
+</ul>
+<h3 id="3-3-completedOptions-Validate-—-验证"><a href="#3-3-completedOptions-Validate-—-验证" class="headerlink" title="3.3 completedOptions.Validate() — 验证"></a>3.3 <code>completedOptions.Validate()</code> — 验证</h3><p><code>cmd/kube-apiserver/app/options/validation.go:131</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s CompletedOptions)</span></span> Validate() []<span class="type">error</span> &#123;</span><br><span class="line">    errs := <span class="built_in">append</span>(s.CompletedOptions.Validate(), ...)</span><br><span class="line">    errs = <span class="built_in">append</span>(errs, validateClusterIPFlags(s.Extra)...)</span><br><span class="line">    errs = <span class="built_in">append</span>(errs, validateServiceNodePort(s.Extra)...)</span><br><span class="line">    errs = <span class="built_in">append</span>(errs, validatePublicIPServiceClusterIPRangeIPFamilies(s.Extra)...)</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>主要验证项：</p>
+<ul>
+<li>Service ClusterIP CIDR：至少一个，最多两个，主 CIDR 不能小于 <code>/20</code></li>
+<li>Service NodePort 范围：合法端口</li>
+<li>IP 族匹配：Service IP 必须与 advertise address 在同一 IP 族</li>
+</ul>
+<hr>
+<h2 id="4-Config-构建：NewConfig"><a href="#4-Config-构建：NewConfig" class="headerlink" title="4. Config 构建：NewConfig()"></a>4. Config 构建：<code>NewConfig()</code></h2><p>验证通过后，<code>Run()</code> 函数首先调用 <code>NewConfig(opts)</code>。这一步<strong>组装三个子服务器各自的配置对象</strong>。</p>
+<p><code>cmd/kube-apiserver/app/config.go:74</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewConfig</span><span class="params">(opts options.CompletedOptions)</span></span> (*Config, <span class="type">error</span>) &#123;</span><br><span class="line">    c := &amp;Config&#123;Options: opts&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. 构建共享的 genericConfig</span></span><br><span class="line">    genericConfig, versionedInformers, storageFactory, err :=</span><br><span class="line">        controlplaneapiserver.BuildGenericConfig(opts.CompletedOptions, ...)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 构建 KubeAPIs Config</span></span><br><span class="line">    kubeAPIs, serviceResolver, pluginInitializer, err :=</span><br><span class="line">        CreateKubeAPIServerConfig(opts, genericConfig, versionedInformers, storageFactory)</span><br><span class="line">    c.KubeAPIs = kubeAPIs</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 构建 APIExtensions Config — 从 KubeAPIs 的 GenericConfig 派生</span></span><br><span class="line">    apiExtensions, err := controlplaneapiserver.CreateAPIExtensionsConfig(</span><br><span class="line">        *kubeAPIs.ControlPlane.Generic, ...)</span><br><span class="line">    c.ApiExtensions = apiExtensions</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 构建 Aggregator Config — 同样从 KubeAPIs 的 GenericConfig 派生</span></span><br><span class="line">    aggregator, err := controlplaneapiserver.CreateAggregatorConfig(</span><br><span class="line">        *kubeAPIs.ControlPlane.Generic, ...)</span><br><span class="line">    c.Aggregator = aggregator</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> c, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-1-BuildGenericConfig-—-共享配置工厂"><a href="#4-1-BuildGenericConfig-—-共享配置工厂" class="headerlink" title="4.1 BuildGenericConfig() — 共享配置工厂"></a>4.1 <code>BuildGenericConfig()</code> — 共享配置工厂</h3><p><code>pkg/controlplane/apiserver/config.go:116</code> 是启动流程中<strong>最长的函数</strong>（约 130 行），将所有选项应用到 <code>genericapiserver.Config</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">BuildGenericConfig()</span><br><span class="line">  │</span><br><span class="line">  ├─ genericapiserver.NewConfig(codecs)        创建默认 Config</span><br><span class="line">  ├─ s.GenericServerRunOptions.ApplyTo()       应用通用选项</span><br><span class="line">  ├─ s.SecureServing.ApplyToConfig()           安全配置（TLS）</span><br><span class="line">  ├─ 创建 clientgo 客户端（loopback）            自通信 client</span><br><span class="line">  ├─ s.Features.ApplyTo()                      特性开关、APF</span><br><span class="line">  ├─ s.APIEnablement.ApplyTo()                 API 启停</span><br><span class="line">  ├─ s.EgressSelector.ApplyTo()                出站流量选择器</span><br><span class="line">  ├─ s.Traces.ApplyTo()                        链路追踪</span><br><span class="line">  ├─ 配置 OpenAPI V2/V3（标题: &quot;Kubernetes&quot;）</span><br><span class="line">  ├─ 配置 LongRunningFunc（watch/proxy/attach/exec/log/portforward）</span><br><span class="line">  ├─ 构建 StorageFactory                       etcd 存储工厂</span><br><span class="line">  ├─ s.Etcd.ApplyWithStorageFactoryTo()        应用 etcd 配置</span><br><span class="line">  ├─ s.Authentication.ApplyTo()                认证配置（X509/Token/Webhook...）</span><br><span class="line">  ├─ BuildAuthorizer()                         授权配置</span><br><span class="line">  └─ s.Audit.ApplyTo()                         审计配置</span><br></pre></td></tr></table></figure>
+
+<p>这里的 <strong>loopback client</strong> 是一个特例：kube-apiserver 内部会通过 HTTP 与自身通信（例如控制器通过 API 查询资源）。代码中将 ContentType 硬编码为 protobuf，并禁用压缩：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">genericConfig.LoopbackClientConfig.ContentConfig.ContentType = <span class="string">&quot;application/vnd.kubernetes.protobuf&quot;</span></span><br><span class="line">genericConfig.LoopbackClientConfig.DisableCompression = <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-子-Config-的构建策略"><a href="#4-2-子-Config-的构建策略" class="headerlink" title="4.2 子 Config 的构建策略"></a>4.2 子 Config 的构建策略</h3><p>三个子服务器共享同一个 <code>genericConfig</code>（通过<strong>浅拷贝 + 选择性覆盖</strong>）：</p>
+<table>
+<thead>
+<tr>
+<th>服务器</th>
+<th>GenericConfig 来源</th>
+<th>独有配置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>KubeAPIs</td>
+<td>BuildGenericConfig 的原始对象</td>
+<td>REST Storage Providers、API 安装、bootstrap 控制器</td>
+</tr>
+<tr>
+<td>APIExtensions</td>
+<td>浅拷贝 kubeAPIs.Generic，清空 PostStartHooks&#x2F;RESTOptionsGetter</td>
+<td>CRD 专用 codec、自己的 ResourceConfig</td>
+</tr>
+<tr>
+<td>Aggregator</td>
+<td>浅拷贝 kubeAPIs.Generic，清空 PostStartHooks&#x2F;RESTOptionsGetter</td>
+<td>APIService 代理、proxy client cert、auto-registration 控制器</td>
+</tr>
+</tbody></table>
+<p><strong>为什么用浅拷贝？</strong> 认证、授权、审计等配置在三个服务器之间完全共享，浅拷贝确保对同一个字段的修改对所有服务器生效。</p>
+<h3 id="4-3-Complete-—-Config-补全"><a href="#4-3-Complete-—-Config-补全" class="headerlink" title="4.3 Complete() — Config 补全"></a>4.3 <code>Complete()</code> — Config 补全</h3><p><code>Config.Complete()</code>（<code>cmd/kube-apiserver/app/config.go:61</code>）非常简单——递归调用三个子 config 的 <code>Complete()</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *Config)</span></span> Complete() (CompletedConfig, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> CompletedConfig&#123;&amp;completedConfig&#123;</span><br><span class="line">        Aggregator:    c.Aggregator.Complete(),</span><br><span class="line">        KubeAPIs:      c.KubeAPIs.Complete(),</span><br><span class="line">        ApiExtensions: c.ApiExtensions.Complete(),</span><br><span class="line">    &#125;&#125;, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>CompletedConfig</code> 结构体中嵌入了一个<strong>私有指针</strong> <code>*completedConfig</code>，这确保了外部代码无法绕过 <code>Complete()</code> 直接构造 <code>CompletedConfig</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> CompletedConfig <span class="keyword">struct</span> &#123;</span><br><span class="line">    *completedConfig    <span class="comment">// 私有，外部无法实例化</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这是 Kubernetes 源码中广泛使用的 <strong>“Config &#x2F; CompletedConfig” 模式</strong>——未补全的和已补全的配置用不同的类型表示，编译器层面防止误用。</p>
+<hr>
+<h2 id="5-CreateServerChain-—-构建三层委托链"><a href="#5-CreateServerChain-—-构建三层委托链" class="headerlink" title="5. CreateServerChain() — 构建三层委托链"></a>5. <code>CreateServerChain()</code> — 构建三层委托链</h2><p>上一篇已经介绍了三层委托链的整体架构，这里聚焦<strong>代码中的构造细节</strong>。</p>
+<p><code>cmd/kube-apiserver/app/server.go:176</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">CreateServerChain</span><span class="params">(config CompletedConfig)</span></span> (*aggregatorapiserver.APIAggregator, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="comment">// 创建 404 handler（最底层兜底）</span></span><br><span class="line">    notFoundHandler := notfoundhandler.New(...)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. 创建 APIExtensions Server（最内层）</span></span><br><span class="line">    apiExtensionsServer, err := config.ApiExtensions.New(</span><br><span class="line">        genericapiserver.NewEmptyDelegateWithCustomHandler(notFoundHandler),</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 创建 KubeAPIServer（中间层）</span></span><br><span class="line">    kubeAPIServer, err := config.KubeAPIs.New(</span><br><span class="line">        apiExtensionsServer.GenericAPIServer,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 创建 Aggregator Server（最外层）</span></span><br><span class="line">    aggregatorServer, err := controlplaneapiserver.CreateAggregatorServer(</span><br><span class="line">        config.Aggregator,</span><br><span class="line">        kubeAPIServer.ControlPlane.GenericAPIServer,</span><br><span class="line">        apiExtensionsServer.Informers.Apiextensions().V1().CustomResourceDefinitions(),</span><br><span class="line">        crdAPIEnabled,</span><br><span class="line">        apiVersionPriorities,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> aggregatorServer, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>构造顺序与请求处理顺序相反</strong>：从最内层（APIExtensions）开始构建，逐层向外包裹。</p>
+<h3 id="5-1-KubeAPIServer-的构造细节"><a href="#5-1-KubeAPIServer-的构造细节" class="headerlink" title="5.1 KubeAPIServer 的构造细节"></a>5.1 KubeAPIServer 的构造细节</h3><p>KubeAPIServer 的 <code>New()</code> 内部（<code>pkg/controlplane/apiserver/server.go:92</code> 和 <code>pkg/controlplane/instance.go:317</code>）做了大量工作：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c CompletedConfig)</span></span> New(delegationTarget genericapiserver.DelegationTarget) (*Instance, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="comment">// 1. 先创建 ControlPlane（GenericAPIServer）</span></span><br><span class="line">    cp, _ := c.ControlPlane.New(<span class="string">&quot;kube-apiserver&quot;</span>, delegationTarget)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 创建所有 REST Storage Provider</span></span><br><span class="line">    restStorageProviders, _ := c.StorageProviders(client)</span><br><span class="line">    <span class="comment">//    ├── corerest (pods, services, configmaps, secrets...)</span></span><br><span class="line">    <span class="comment">//    ├── apps (deployments, statefulsets...)</span></span><br><span class="line">    <span class="comment">//    ├── authorization</span></span><br><span class="line">    <span class="comment">//    ├── autoscaling</span></span><br><span class="line">    <span class="comment">//    ├── batch (jobs, cronjobs)</span></span><br><span class="line">    <span class="comment">//    ├── certificates</span></span><br><span class="line">    <span class="comment">//    ├── coordination (leases)</span></span><br><span class="line">    <span class="comment">//    ├── discovery</span></span><br><span class="line">    <span class="comment">//    ├── networking (ingress, networkpolicies)</span></span><br><span class="line">    <span class="comment">//    ├── node</span></span><br><span class="line">    <span class="comment">//    ├── policy</span></span><br><span class="line">    <span class="comment">//    ├── rbac</span></span><br><span class="line">    <span class="comment">//    ├── scheduling</span></span><br><span class="line">    <span class="comment">//    ├── storage (csidrivers, csinodes)</span></span><br><span class="line">    <span class="comment">//    ├── flowcontrol</span></span><br><span class="line">    <span class="comment">//    ├── apps</span></span><br><span class="line">    <span class="comment">//    └── ...</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 安装所有 API Group</span></span><br><span class="line">    s.ControlPlane.InstallAPIs(restStorageProviders...)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 注册 PostStartHook: bootstrap-controller</span></span><br><span class="line">    s.ControlPlane.GenericAPIServer.AddPostStartHookOrDie(<span class="string">&quot;bootstrap-controller&quot;</span>, ...)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> s, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>StorageProviders()</code>（<code>pkg/controlplane/instance.go:387</code>）返回了<strong>所有内置 API 组的 REST 存储提供者</strong>。每个 Provider 都会在 <code>InstallAPIs()</code> 阶段注册到路由中。</p>
+<hr>
+<h2 id="6-GenericAPIServer-New-—-通用流程"><a href="#6-GenericAPIServer-New-—-通用流程" class="headerlink" title="6. GenericAPIServer.New() — 通用流程"></a>6. <code>GenericAPIServer.New()</code> — 通用流程</h2><p>每个服务器的 <code>New()</code> 最终都落到 <code>staging/src/k8s.io/apiserver/pkg/server/config.go:787</code> 的 <code>completedConfig.New()</code>。这是最核心的通用构造函数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c completedConfig)</span></span> New(name <span class="type">string</span>, delegationTarget DelegationTarget) (*GenericAPIServer, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="comment">// 1. 构建 HandlerChain（包裹 filter）</span></span><br><span class="line">    handlerChainBuilder := <span class="function"><span class="keyword">func</span><span class="params">(handler http.Handler)</span></span> http.Handler &#123;</span><br><span class="line">        <span class="keyword">return</span> c.BuildHandlerChainFunc(handler, c.Config)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 创建 APIServerHandler（路由分发器）</span></span><br><span class="line">    apiServerHandler := NewAPIServerHandler(name, c.Serializer,</span><br><span class="line">        handlerChainBuilder, delegationTarget.UnprotectedHandler())</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 构造 GenericAPIServer 结构体</span></span><br><span class="line">    s := &amp;GenericAPIServer&#123;</span><br><span class="line">        Handler:          apiServerHandler,</span><br><span class="line">        SecureServingInfo: c.SecureServing,</span><br><span class="line">        <span class="comment">// ... 数十个字段</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 合并 DelegationTarget 的 PostStartHooks、PreShutdownHooks</span></span><br><span class="line">    <span class="keyword">for</span> k, v := <span class="keyword">range</span> delegationTarget.PostStartHooks() &#123;</span><br><span class="line">        s.postStartHooks[k] = v</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 5. 注册通用 PostStartHooks</span></span><br><span class="line">    s.AddPostStartHook(<span class="string">&quot;generic-apiserver-start-informers&quot;</span>, ...)</span><br><span class="line">    s.AddPostStartHook(<span class="string">&quot;priority-and-fairness-config-consumer&quot;</span>, ...)</span><br><span class="line">    s.AddPostStartHook(<span class="string">&quot;priority-and-fairness-filter&quot;</span>, ...)</span><br><span class="line">    s.AddPostStartHook(<span class="string">&quot;storage-object-count-tracker-hook&quot;</span>, ...)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 6. 安装通用端点</span></span><br><span class="line">    installAPI(name, s, c.Config)</span><br><span class="line">    <span class="comment">//    ├── /index          (资源列表)</span></span><br><span class="line">    <span class="comment">//    ├── /debug/pprof    (性能分析)</span></span><br><span class="line">    <span class="comment">//    ├── /metrics        (Prometheus 指标)</span></span><br><span class="line">    <span class="comment">//    ├── /version        (版本信息)</span></span><br><span class="line">    <span class="comment">//    ├── /api, /apis     (Discovery)</span></span><br><span class="line">    <span class="comment">//    └── /debug/flags    (动态 Flag)</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> s, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="HandlerChain-的构建"><a href="#HandlerChain-的构建" class="headerlink" title="HandlerChain 的构建"></a>HandlerChain 的构建</h3><p><code>c.BuildHandlerChainFunc</code> 默认值是 <code>DefaultBuildHandlerChain</code>（<code>staging/src/k8s.io/apiserver/pkg/server/config.go:1036</code>），它按照<strong>从内到外</strong>的顺序包装 HTTP handler。但由于 HTTP handler 是最外层先执行，所以请求的实际处理顺序是<strong>从外到内</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">WithPanicRecovery (最外层，最先执行)</span><br><span class="line">  WithAuditInit</span><br><span class="line">    WithMuxAndDiscoveryComplete</span><br><span class="line">      WithRequestReceivedTimestamp</span><br><span class="line">        WithRequestInfo</span><br><span class="line">          WithRoutine (APIServingWithRoutine feature)</span><br><span class="line">            WithLatencyTrackers</span><br><span class="line">              WithHTTPLogging</span><br><span class="line">                WithRetryAfter (shutdown 时)</span><br><span class="line">                  WithHSTS</span><br><span class="line">                    WithCacheControl</span><br><span class="line">                      WithProbabilisticGoaway</span><br><span class="line">                        WithWatchTerminationDuringShutdown</span><br><span class="line">                          WithWaitGroup</span><br><span class="line">                            WithRequestDeadline</span><br><span class="line">                              WithTimeoutForNonLongRunningRequests</span><br><span class="line">                                WithWarningRecorder</span><br><span class="line">                                  WithCORS</span><br><span class="line">                                    WithAuthentication    ← 认证</span><br><span class="line">                                      WithTracing</span><br><span class="line">                                        WithAudit         ← 审计</span><br><span class="line">                                          WithImpersonation / WithConstrainedImpersonation</span><br><span class="line">                                            WithPriorityAndFairness / WithMaxInFlightLimit  ← 限流</span><br><span class="line">                                              WithAuthorization  ← 授权</span><br><span class="line">                                                TrackStarted (authorization)</span><br><span class="line">                                                  TrackCompleted (最内层, 实际 API Handler)</span><br></pre></td></tr></table></figure>
+
+<p>这与上一篇中的简化版本一致，但本篇列出了更完整的过滤器列表。</p>
+<hr>
+<h2 id="7-PrepareRun-—-就绪准备"><a href="#7-PrepareRun-—-就绪准备" class="headerlink" title="7. PrepareRun() — 就绪准备"></a>7. <code>PrepareRun()</code> — 就绪准备</h2><p><code>GenericAPIServer.PrepareRun()</code>（<code>staging/src/k8s.io/apiserver/pkg/server/genericapiserver.go:444</code>）在服务器启动前做最后的准备工作，按顺序执行：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *GenericAPIServer)</span></span> PrepareRun() preparedGenericAPIServer &#123;</span><br><span class="line">    <span class="comment">// 1. 递归调用委托链的 PrepareRun（从最内层到最外层）</span></span><br><span class="line">    s.delegationTarget.PrepareRun()</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 安装 OpenAPI V2 &amp; V3 文档</span></span><br><span class="line">    s.OpenAPIVersionedService, s.StaticOpenAPISpec = routes.OpenAPI&#123;</span><br><span class="line">        Config: s.openAPIConfig,</span><br><span class="line">    &#125;.InstallV2(s.Handler.GoRestfulContainer, s.Handler.NonGoRestfulMux)</span><br><span class="line">    s.OpenAPIV3VersionedService = routes.OpenAPI&#123;</span><br><span class="line">        V3Config: s.openAPIV3Config,</span><br><span class="line">    &#125;.InstallV3(s.Handler.GoRestfulContainer, s.Handler.NonGoRestfulMux)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 安装健康检查端点</span></span><br><span class="line">    s.installHealthz()      <span class="comment">// /healthz</span></span><br><span class="line">    s.installLivez()        <span class="comment">// /livez</span></span><br><span class="line">    s.installReadyz()       <span class="comment">// /readyz (含 shutdown 检查)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. 安装调试端点</span></span><br><span class="line">    flagz.Install(s.Handler.NonGoRestfulMux, ...)     <span class="comment">// /debug/flags</span></span><br><span class="line">    statusz.Install(s.Handler.NonGoRestfulMux, ...)   <span class="comment">// /debug/statusz</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> preparedGenericAPIServer&#123;s&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>返回的 <code>preparedGenericAPIServer</code> 包装了 <code>*GenericAPIServer</code>，对外暴露 <code>Run(ctx)</code> 和 <code>RunWithContext(ctx)</code> 方法。</p>
+<hr>
+<h2 id="8-Run-—-启动-HTTPS-服务"><a href="#8-Run-—-启动-HTTPS-服务" class="headerlink" title="8. Run() — 启动 HTTPS 服务"></a>8. <code>Run()</code> — 启动 HTTPS 服务</h2><p><code>preparedGenericAPIServer.RunWithContext()</code>（<code>staging/src/k8s.io/apiserver/pkg/server/genericapiserver.go:536</code>）是服务器的<strong>主循环</strong>。它的核心流程：</p>
+<h3 id="8-1-NonBlockingRun-—-异步启动"><a href="#8-1-NonBlockingRun-—-异步启动" class="headerlink" title="8.1 NonBlockingRun — 异步启动"></a>8.1 NonBlockingRun — 异步启动</h3><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s preparedGenericAPIServer)</span></span> NonBlockingRunWithContext(ctx context.Context, shutdownTimeout time.Duration) &#123;</span><br><span class="line">    <span class="comment">// 1. 启动 HTTPS 监听</span></span><br><span class="line">    s.SecureServingInfo.Serve(s.Handler, shutdownTimeout, internalStopCh)</span><br><span class="line">    <span class="comment">//    ├── net.Listen(&quot;tcp&quot;, &quot;:6443&quot;)</span></span><br><span class="line">    <span class="comment">//    ├── tls.NewListener(listener, tlsConfig)</span></span><br><span class="line">    <span class="comment">//    └── http.Server.Serve(tlsListener)</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. 运行所有 PostStartHooks（异步）</span></span><br><span class="line">    s.RunPostStartHooks(ctx)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. 通知 systemd 服务已就绪</span></span><br><span class="line">    systemd.SdNotify(<span class="literal">true</span>, <span class="string">&quot;READY=1\n&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-2-PostStartHooks-—-启动后钩子"><a href="#8-2-PostStartHooks-—-启动后钩子" class="headerlink" title="8.2 PostStartHooks — 启动后钩子"></a>8.2 PostStartHooks — 启动后钩子</h3><p>PostStartHooks 是一组在 HTTPS 监听启动后运行的异步任务。按注册顺序启动：</p>
+<table>
+<thead>
+<tr>
+<th>Hook 名称</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>generic-apiserver-start-informers</code></td>
+<td>启动 SharedInformerFactory</td>
+</tr>
+<tr>
+<td><code>priority-and-fairness-config-consumer</code></td>
+<td>启动 FlowControl 配置消费</td>
+</tr>
+<tr>
+<td><code>priority-and-fairness-filter</code></td>
+<td>启动 APF 水位线维护</td>
+</tr>
+<tr>
+<td><code>storage-object-count-tracker-hook</code></td>
+<td>启动对象计数追踪</td>
+</tr>
+<tr>
+<td><code>kube-apiserver-autoregistration</code></td>
+<td>CRD &amp; APIService 自动注册</td>
+</tr>
+<tr>
+<td><code>bootstrap-controller</code></td>
+<td>Kubernetes Service Endpoints 协调</td>
+</tr>
+<tr>
+<td><code>start-kubernetes-service-cidr-controller</code></td>
+<td>Service CIDR 控制器（MultiCIDR 特性）</td>
+</tr>
+<tr>
+<td>…</td>
+<td>identity lease、system namespaces 等</td>
+</tr>
+</tbody></table>
+<h3 id="8-3-优雅关闭（Graceful-Shutdown）"><a href="#8-3-优雅关闭（Graceful-Shutdown）" class="headerlink" title="8.3 优雅关闭（Graceful Shutdown）"></a>8.3 优雅关闭（Graceful Shutdown）</h3><p><code>RunWithContext</code> 的核心逻辑除了启动，还有一套<strong>完整的优雅关闭机制</strong>。关闭流程的同步关系如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">ctx 取消（SIGTERM/SIGINT）</span><br><span class="line">  │</span><br><span class="line">  ├─ Signal: ShutdownInitiated          → /readyz 开始返回失败</span><br><span class="line">  │</span><br><span class="line">  ├─ Sleep: ShutdownDelayDuration       → 给负载均衡器时间摘除本节点</span><br><span class="line">  │</span><br><span class="line">  ├─ Signal: AfterShutdownDelayDuration</span><br><span class="line">  │     │</span><br><span class="line">  │     ├─ Run PreShutdownHooks         → 清理资源（如 Endpoint 摘除）</span><br><span class="line">  │     │</span><br><span class="line">  │     └─ Wait PreShutdownHooksStopped</span><br><span class="line">  │           │</span><br><span class="line">  │           └─ Signal: NotAcceptingNewRequest  → 停止接受新请求</span><br><span class="line">  │                 │</span><br><span class="line">  │                 ├─ NonLongRunningRequestWaitGroup.Wait()   → 等待短请求完成</span><br><span class="line">  │                 ├─ WatchRequestWaitGroup.Wait()            → 等待 Watch 断开</span><br><span class="line">  │                 │</span><br><span class="line">  │                 └─ Signal: InFlightRequestsDrained</span><br><span class="line">  │                       │</span><br><span class="line">  │                       ├─ AuditBackend.Shutdown()</span><br><span class="line">  │                       ├─ http.Server.Shutdown()</span><br><span class="line">  │                       └─ Signal: HTTPServerStoppedListening</span><br></pre></td></tr></table></figure>
+
+<p>关键设计点：</p>
+<ul>
+<li><code>ShutdownDelayDuration</code>：默认 0，可通过 <code>--shutdown-delay-duration</code> 设置。在收到 SIGTERM 后，先延迟一段时间再开始拒绝请求，让负载均衡器检测到 <code>/readyz</code> 变红后摘除节点</li>
+<li><strong>两阶段关闭</strong>：先等待非长连接请求完成（受 <code>RequestTimeout</code> 限制），再等待 Watch 连接断开（受 <code>ShutdownWatchTerminationGracePeriod</code> 限制）</li>
+<li><strong>Retry-After 模式</strong>：启用 <code>ShutdownSendRetryAfter</code> 后，服务器在关闭期间对新请求返回 <code>429 Retry-After</code> 而不是直接断开连接</li>
+</ul>
+<hr>
+<h2 id="9-本篇总结"><a href="#9-本篇总结" class="headerlink" title="9. 本篇总结"></a>9. 本篇总结</h2><p>kube-apiserver 的启动流程可以概括为<strong>三步走</strong>：</p>
+<ol>
+<li><strong>配置构建</strong>：Options → Config → CompletedConfig。选项被层层补全、验证，最终形成三个子服务器共享的配置集合</li>
+<li><strong>服务器链构建</strong>：从 APIExtensions → KubeAPIs → Aggregator 逐层实例化，通过 <code>DelegationTarget</code> 接口形成委托链</li>
+<li><strong>启动运行</strong>：PrepareRun 安装 OpenAPI、健康检查和调试端点，Run 启动 HTTPS 监听、执行 PostStartHooks，并等待优雅关闭</li>
+</ol>
+<p>整个流程中大量运用了 Kubernetes 源码的经典设计模式：</p>
+<ul>
+<li><strong>Config &#x2F; CompletedConfig</strong> 模式：编译器强制要求 Complete() 先于 New()</li>
+<li><strong>委托链</strong>模式：通过接口组合实现关注点分离</li>
+<li><strong>装饰器</strong>模式：<code>DefaultBuildHandlerChain</code> 在 HTTP Handler 上逐层包装中间件</li>
+</ul>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+  <section id="comments">
+    <script src="https://giscus.app/client.js"
+            data-repo="fengz63/fengz63.github.io"
+            data-repo-id="R_kgDONkh1Vg"
+            data-category="Q&amp;A"
+            data-category-id="DIC_kwDONkh1Vs4Cuqet"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="zh-CN"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Deployed by <a href="https://github.com/kaedea/notion-down" target="_blank">notion-down</a> and
+    Theme by <a href="https://github.com/kaedea/hexo-theme-hacker" target="_blank">hexo-theme-hacker</a>
+    </br>
+    
+    &copy; 2026 fengcode
+    
+  </p>
+</footer>
+    
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'G-J38N5N288S', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+  </div>
+</div>
+</body>
+</html>
