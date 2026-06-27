@@ -145,9 +145,9 @@
 
 <p>每个认证方法返回三个值：</p>
 <ul>
-<li>**<code>*Response</code>**：认证成功时包含用户信息和受众</li>
-<li>**<code>bool</code>**：是否成功。<code>false</code> 表示”我不认识这个凭证，请下一个认证器试试”</li>
-<li>**<code>error</code>**：表示认证过程遇到了错误（如网络不通），而不是认证失败</li>
+<li><code>*Response</code>：认证成功时包含用户信息和受众</li>
+<li><code>bool</code>：是否成功。<code>false</code> 表示”我不认识这个凭证，请下一个认证器试试”</li>
+<li><code>error</code>：表示认证过程遇到了错误（如网络不通），而不是认证失败</li>
 </ul>
 <p>理解认证器的返回值是理解整个认证链的关键：</p>
 <table>
