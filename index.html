@@ -75,6 +75,72 @@
 
   
     
+    <h3 class="article-title"><a href="/article/808160245f59/"><span>kube-apiserver 源码解读（九）Watch 机制与 Watch Cache 实现</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/808160245f59/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-07-25T08:00:00.000Z">
+          2026-07-25
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>在 Kubernetes 体系中，<strong>Watch 机制</strong>是控制平面中最核心的通信模式。kubelet、scheduler、controller-manager 等组件都通过 Watch 来实时跟踪资源变化，而不需要轮询 apiserver。</p>
+<p>Watch 机制的实现横跨三个层次：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Client (reflector/informer)</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">[Watch Cache - Cacher]       ← 内存缓存层，服务所有 List/Watch 请求</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">[etcd3 Watch - watchChan]    ← 底层存储层，与 etcd 交互</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">[etcd]                       ← 持久化存储</span><br></pre></td></tr></table></figure>
+
+<p>本文将从最上层的 <code>watch.Interface</code> 开始，逐层深入直到 etcd 的 MVCC Watch，完整解析 Watch 机制的实现细节。</p>
+        
+          <p><a class="excerpt-btn" href="/article/808160245f59/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/ea485f0b1173/"><span>kube-apiserver 源码解读（四）认证机制：从 TLS 握手到用户身份确认</span></a></h3>
     
   
@@ -635,68 +701,6 @@
     <span class="post-tags">
       <i class="icon-tags"></i>
         <a href="/tags/生活/">生活</a>
-    </span>
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/72b635bfa387/"><span>宁波的夕阳</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/72b635bfa387/" rel="bookmark">
-        <time class="entry-date published" datetime="2025-12-14T07:55:18.000Z">
-          2025-12-14
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>周六去宁波玩，吃过饭却发现自己的车被人给无缘磕碰到。报警、取证折腾了几个小时，最后被交警告知还得第二天上午去交警队处理。</p>
-        
-          <p><a class="excerpt-btn" href="/article/72b635bfa387/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/旅行/">旅行</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/旅行/">旅行</a>
     </span>
     
 
