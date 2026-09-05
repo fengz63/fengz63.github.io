@@ -219,8 +219,8 @@
   <div class="article-content">
     <div class="entry">
       
-        <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>Kubernetes 中所有的API对象都是存储在Etcd中，且只能通过kube-apiserver访问。当访问量很大时，kube-apiserver会不堪重负。</p>
-<p>基于上述考虑，kubernetes 中引入了一个informer机制，本质上是在内存中维护一个缓存，客户端的读写请求都可以通过缓存实现，而不必全部穿透到kube-apiserver。</p>
+        <h2 id="1-背景"><a href="#1-背景" class="headerlink" title="1. 背景"></a>1. 背景</h2><p>Kubernetes 中所有的API对象都是存储在Etcd中，且只能通过kube-apiserver访问，当访问量很大时，kube-apiserver会不堪重负。</p>
+<p>基于上述考虑，kubernetes 中引入了一个informer机制。informer 会在客户端内维护一份资源缓存，控制器可以通过 lister&#x2F;indexer 读取缓存，避免频繁访问kube-apiserver。此外，创建、更新和删除等写操作仍需要通过 kube-apiserver 执行。</p>
         
           <p><a class="excerpt-btn" href="/article/16b07ccc9216/"><span>阅读全文</span></a></p>
         

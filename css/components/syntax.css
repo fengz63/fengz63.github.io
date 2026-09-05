@@ -82,6 +82,10 @@ figure.highlight .code {
 figure.highlight .line {
   height: 20px;
 }
+pre {
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
 pre .comment,
 pre .template_comment,
 pre .diff .header,
