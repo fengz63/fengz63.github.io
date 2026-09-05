@@ -690,6 +690,8 @@ article code {
 article p {
   margin: 2rem 0;
   line-height: 1.8;
+  text-align: justify;
+  text-justify: inter-ideograph;
 }
 article .video-container {
   position: relative;
@@ -1127,6 +1129,10 @@ figure.highlight .code {
 }
 figure.highlight .line {
   height: 20px;
+}
+pre {
+  tab-size: 4;
+  -moz-tab-size: 4;
 }
 pre .comment,
 pre .template_comment,
