@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>Feng&#39;s Tech Blogs</title>
   
-  <subtitle>代码与生活</subtitle>
+  <subtitle>技术与生活</subtitle>
   <link href="https://fengz63.github.io/atom.xml" rel="self"/>
   
   <link href="https://fengz63.github.io/"/>
