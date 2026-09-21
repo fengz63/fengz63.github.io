@@ -75,6 +75,70 @@
 
   
     
+    <h3 class="article-title"><a href="/article/d7c621f16c84/"><span>watchCache 内存泄漏问题分析与修复</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/d7c621f16c84/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-09-21T12:30:00.000Z">
+          2026-09-21
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-问题背景与现象"><a href="#1-问题背景与现象" class="headerlink" title="1. 问题背景与现象"></a>1. 问题背景与现象</h2><p>在 kubernetes 的 apiserver 架构中，watchCache 被用来缓存集群中的资源状态，以减轻 storage backend（如 etcd 或 kubebrain）的查询压力。</p>
+<p>当 apiserver 启动或 watch 发生断开重连时，watchCache 会通过 reflector 向 storage backend 发起全量 list 请求以初始化状态。如果在某些特定的 storage backend（例如 kubebrainv2）中禁用了分页读，全量 list 请求会一次性返回海量的资源对象（例如 10 万个 pod）。</p>
+<p><strong>现象：</strong> 在这种全量拉取场景下，即使绝大部分的 pod 在后续被删除，只要 watchCache 中还残留着哪怕 1 个旧 pod，整个 10 万个 pod 占用的巨大内存（可能高达上百兆）就无法被 go 垃圾回收器释放，导致 apiserver 出现严重的内存泄漏与驻留。</p>
+        
+          <p><a class="excerpt-btn" href="/article/d7c621f16c84/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/808160245f59/"><span>kube-apiserver 源码解读（九）Watch 机制与 Watch Cache 实现</span></a></h3>
     
   
@@ -650,72 +714,10 @@
 
 
 
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/247c2d00d4ba/"><span>饭后散步</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/247c2d00d4ba/" rel="bookmark">
-        <time class="entry-date published" datetime="2026-01-10T05:16:40.000Z">
-          2026-01-10
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>中午吃完饭后看着外面太阳正好，并且杭州刚好新开了家蜜雪冰城的旗舰店，遂决定步行过去看看。路过一条小河，远处是浙大紫金港校区，红墙在阳光照耀下格外的显眼。</p>
-        
-          <p><a class="excerpt-btn" href="/article/247c2d00d4ba/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/生活/">生活</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/生活/">生活</a>
-    </span>
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
 
 <section class="pagination">
   
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">&gt;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">&gt;</a>
   
 </section>
 

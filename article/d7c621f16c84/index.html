@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>watchCache 内存泄漏问题分析与修复 | Feng&#39;s Tech Blogs | 技术与生活</title>
+
+  
+  <meta name="author" content="fengcode">
+  
+
+  
+  <meta name="description" content="some notes of my life">
+  
+
+  
+  
+  <meta name="keywords" content="技术,Kubernetes源码解读">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="watchCache 内存泄漏问题分析与修复"/>
+
+  <meta property="og:site_name" content="Feng&#39;s Tech Blogs"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Feng&#39;s Tech Blogs" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  
+  <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
+  <script src="/js/pangu-407.min.js"></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    pangu.autoSpacingPage();
+  });
+</script>
+
+<!-- 添加图片查看器脚本 -->
+<script src="/js/image-viewer.js"></script>
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">Feng&#39;s Tech Blogs</a>
+    </h1>
+    <p class="site-description">技术与生活</p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/archives">归档</a></li>
+      
+        <li><a href="/categories">分类</a></li>
+      
+        <li><a href="/about">关于</a></li>
+      
+        <li><a href="/atom.xml">订阅</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>watchCache 内存泄漏问题分析与修复</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/d7c621f16c84/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-09-21T12:30:00.000Z">
+          2026-09-21
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        
+
+<script type="text/javascript">
+    function convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+    window.onscroll = function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if (scrollTop > convertRemToPixels(40)) {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'visible';
+        } else {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'hidden';
+        }
+    }
+</script>
+
+
+<div id="toc" class="toc-article">
+      <div class="toc-content">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF%E4%B8%8E%E7%8E%B0%E8%B1%A1"><span class="toc-text">1. 问题背景与现象</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E5%BC%95%E8%B5%B7%E9%97%AE%E9%A2%98%E7%9A%84%E5%85%B3%E9%94%AE%E7%BB%86%E8%8A%82%E4%B8%8E%E6%B5%81%E7%A8%8B"><span class="toc-text">2. 引起问题的关键细节与流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-PodList-%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="toc-text">2.1 PodList 的内存布局</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-Go-%E5%88%87%E7%89%87%E7%9A%84%E5%BA%95%E5%B1%82%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="toc-text">2.2 Go 切片的底层内存模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-3-%E6%B3%84%E6%BC%8F%E6%B5%81%E7%A8%8B%E4%B8%8E%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88k8s-1-17-1-26%EF%BC%89"><span class="toc-text">2.3 泄漏流程与代码分析（k8s 1.17 - 1.26）</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#reflector-%E5%8F%91%E8%B5%B7%E5%85%A8%E9%87%8F-list"><span class="toc-text">reflector 发起全量 list</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#extractList-%E6%8F%90%E5%8F%96%E6%8C%87%E9%92%88%EF%BC%88%E9%97%AE%E9%A2%98%E6%89%80%E5%9C%A8%EF%BC%89"><span class="toc-text">extractList 提取指针（问题所在）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#syncWith-%E5%AD%98%E5%85%A5-watchCache-%E7%9A%84-store"><span class="toc-text">syncWith 存入 watchCache 的 store</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%A0%E9%99%A4-pod-%E5%90%8E%E5%BA%95%E5%B1%82%E6%95%B0%E7%BB%84%E4%BE%9D%E7%84%B6%E5%AD%98%E6%B4%BB"><span class="toc-text">删除 pod 后底层数组依然存活</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E4%BC%98%E5%8C%96%E4%B8%8E%E4%BF%AE%E5%A4%8D%E6%96%B9%E6%A1%88"><span class="toc-text">3. 优化与修复方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E6%B5%85%E6%8B%B7%E8%B4%9D%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="toc-text">3.1 浅拷贝实现逻辑</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-Kubernetes-%E5%AE%98%E6%96%B9%E4%BF%AE%E5%A4%8D%EF%BC%9AExtractListWithAlloc"><span class="toc-text">3.2 Kubernetes 官方修复：ExtractListWithAlloc</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E4%BC%98%E5%8C%96%E6%95%88%E6%9E%9C"><span class="toc-text">3.3 优化效果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-text">4. 参考资料</span></a></li></ol>
+      </div>
+</div>
+<style>
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+
+
+        <h2 id="1-问题背景与现象"><a href="#1-问题背景与现象" class="headerlink" title="1. 问题背景与现象"></a>1. 问题背景与现象</h2><p>在 kubernetes 的 apiserver 架构中，watchCache 被用来缓存集群中的资源状态，以减轻 storage backend（如 etcd 或 kubebrain）的查询压力。</p>
+<p>当 apiserver 启动或 watch 发生断开重连时，watchCache 会通过 reflector 向 storage backend 发起全量 list 请求以初始化状态。如果在某些特定的 storage backend（例如 kubebrainv2）中禁用了分页读，全量 list 请求会一次性返回海量的资源对象（例如 10 万个 pod）。</p>
+<p><strong>现象：</strong> 在这种全量拉取场景下，即使绝大部分的 pod 在后续被删除，只要 watchCache 中还残留着哪怕 1 个旧 pod，整个 10 万个 pod 占用的巨大内存（可能高达上百兆）就无法被 go 垃圾回收器释放，导致 apiserver 出现严重的内存泄漏与驻留。</p>
+<span id="more"></span>
+
+<h2 id="2-引起问题的关键细节与流程"><a href="#2-引起问题的关键细节与流程" class="headerlink" title="2. 引起问题的关键细节与流程"></a>2. 引起问题的关键细节与流程</h2><p>导致这个问题的根本原因在于 go 语言的切片（Slice）底层内存模型与 kubernetes 原生数据结构的结合方式。</p>
+<h3 id="2-1-PodList-的内存布局"><a href="#2-1-PodList-的内存布局" class="headerlink" title="2.1 PodList 的内存布局"></a>2.1 PodList 的内存布局</h3><p>kubernetes 中 PodList 的定义如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> PodList <span class="keyword">struct</span> &#123;</span><br><span class="line">    metav1.TypeMeta</span><br><span class="line">    metav1.ListMeta</span><br><span class="line">    <span class="comment">// 这是一个值类型切片，而不是 []*Pod</span></span><br><span class="line">    Items []Pod</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当反序列化一个包含 10 万个 pod 的大包时，<code>Items []Pod</code> 会在堆上分配一个<strong>连续且巨大的底层数组</strong>，这 10 万个 pod 的外层结构体紧凑地排列在这个内存块中。</p>
+<h3 id="2-2-Go-切片的底层内存模型"><a href="#2-2-Go-切片的底层内存模型" class="headerlink" title="2.2 Go 切片的底层内存模型"></a>2.2 Go 切片的底层内存模型</h3><p>要理解这个泄漏，必须先理解 go 切片的内存布局。go 语言中一个切片在 runtime 中由三个字段构成：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────────┐</span><br><span class="line">│  ptr (指针)  │  len (长度)  │  cap (容量)  │</span><br><span class="line">│  ──────────────────────────────────  │</span><br><span class="line">│  ptr ──────────►┌───┬───┬───┬───┬───┬───┬─────────┐</span><br><span class="line">│                 │ 0 │ 1 │ 2 │ 3 │...│99999│ (空闲) │</span><br><span class="line">│                 └───┴───┴───┴───┴───┴───┴─────────┘</span><br><span class="line">│                       底层数组 (Backing Array)        │</span><br><span class="line">└─────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>关键点在于：<strong>切片的 ptr 指向底层数组的起始地址，而底层数组是一个连续的内存块。go 的 gc 只看”是否有任何指针指向这块内存的任意位置”。</strong></p>
+<p>举个具体例子：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">items := <span class="built_in">make</span>([]Pod, <span class="number">100000</span>)  <span class="comment">// 分配一个连续的底层数组</span></span><br><span class="line">sub := items[<span class="number">50000</span>:<span class="number">50001</span>]     <span class="comment">// 取子切片，sub.ptr 指向 items[50000]</span></span><br><span class="line">items = <span class="literal">nil</span>                    <span class="comment">// items 变量清空，但底层数组仍被 sub.ptr 引用</span></span><br><span class="line"><span class="comment">// 此时 gc 无法回收整个底层数组，因为 sub.ptr 还指向其中的某个位置</span></span><br></pre></td></tr></table></figure>
+
+<p>即使 <code>items</code> 变量已经置为 nil，只要 <code>sub</code> 还引用着底层数组中的<strong>任何一个元素</strong>，整个 10 万个 Pod 的内存块就无法被回收。这就是 go 官方文档中提到的 <a href="https://go.dev/blog/slices-intro#a-possible-gotcha">A possible gotcha</a>。</p>
+<h3 id="2-3-泄漏流程与代码分析（k8s-1-17-1-26）"><a href="#2-3-泄漏流程与代码分析（k8s-1-17-1-26）" class="headerlink" title="2.3 泄漏流程与代码分析（k8s 1.17 - 1.26）"></a>2.3 泄漏流程与代码分析（k8s 1.17 - 1.26）</h3><p>在 k8s 代码中，主要链路如下：</p>
+<h4 id="reflector-发起全量-list"><a href="#reflector-发起全量-list" class="headerlink" title="reflector 发起全量 list"></a>reflector 发起全量 list</h4><p>reflector 通过 pager 向 storage backend 发起全量 list 请求，返回完整的 PodList：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// staging/src/k8s.io/client-go/tools/cache/reflector.go</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> list(ctx context.Context) <span class="type">error</span> &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    pager := pager.New(pager.SimplePageFunc(<span class="function"><span class="keyword">func</span><span class="params">(opts metav1.ListOptions)</span></span> (runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> r.listerWatcher.ListWithContext(ctx, opts)</span><br><span class="line">    &#125;))</span><br><span class="line">    <span class="comment">// 当 etcd 禁用分页时，PageSize=0，一次性返回所有 pod</span></span><br><span class="line">    pager.PageSize = <span class="number">0</span></span><br><span class="line">    list, paginatedResult, err = pager.ListWithAlloc(context.Background(), options)</span><br><span class="line">    <span class="comment">// ...</span></span><br></pre></td></tr></table></figure>
+
+<p>此时 list 返回的是一个 <code>*v1.PodList</code>，其中 <code>Items []Pod</code> 是一个包含 10 万个 Pod 的连续底层数组：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">podList.Items 底层数组:</span><br><span class="line">┌──────┬──────┬──────┬──────┬─────┬──────────┐</span><br><span class="line">│Pod[0]│Pod[1]│Pod[2]│Pod[3]│ ... │Pod[99999]│</span><br><span class="line">└──────┴──────┴──────┴──────┴─────┴──────────┘</span><br></pre></td></tr></table></figure>
+
+<h4 id="extractList-提取指针（问题所在）"><a href="#extractList-提取指针（问题所在）" class="headerlink" title="extractList 提取指针（问题所在）"></a>extractList 提取指针（问题所在）</h4><p>reflector 调用 <code>meta.ExtractList</code> 从 PodList 中提取每个 Pod 的指针：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// staging/src/k8s.io/client-go/tools/cache/reflector.go</span></span><br><span class="line">items, err := meta.ExtractList(list)  <span class="comment">// k8s 1.18 使用的是这个，没有 WithAlloc</span></span><br></pre></td></tr></table></figure>
+
+<p><code>ExtractList</code> 内部调用 <code>extractList(obj, false)</code>，关键逻辑如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// staging/src/k8s.io/apimachinery/pkg/api/meta/help.go</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">extractList</span><span class="params">(obj runtime.Object, allocNew <span class="type">bool</span>)</span></span> ([]runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">    itemsPtr, _ := GetItemsPtr(obj)    <span class="comment">// 获取 PodList.Items 的 reflect.Value</span></span><br><span class="line">    items, _ := conversion.EnforcePtr(itemsPtr)</span><br><span class="line">    list := <span class="built_in">make</span>([]runtime.Object, items.Len())</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i := <span class="keyword">range</span> list &#123;</span><br><span class="line">        raw := items.Index(i)          <span class="comment">// raw = PodList.Items[i]（值类型 Pod）</span></span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">        <span class="keyword">default</span>:  <span class="comment">// allocNew=false 时走这里</span></span><br><span class="line">            list[i], _ = raw.Addr().Interface().(runtime.Object)</span><br><span class="line">            <span class="comment">//       ^^^^</span></span><br><span class="line">            <span class="comment">//       raw.Addr() 就是 &amp;podList.Items[i]</span></span><br><span class="line">            <span class="comment">//       直接取底层数组中第 i 个元素的地址</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> list, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>返回的 <code>list []runtime.Object</code> 中，每个元素都是 <code>&amp;podList.Items[i]</code>——<strong>指向同一个巨大底层数组中不同位置的指针</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">list[0] ──► &amp;podList.Items[0] ──┐</span><br><span class="line">list[1] ──► &amp;podList.Items[1] ──┤</span><br><span class="line">list[2] ──► &amp;podList.Items[2] ──┼──► PodList.Items 底层数组（10万个Pod）</span><br><span class="line">   ...                          │</span><br><span class="line">list[99999] ► &amp;podList.Items[99999]┘</span><br></pre></td></tr></table></figure>
+
+<h4 id="syncWith-存入-watchCache-的-store"><a href="#syncWith-存入-watchCache-的-store" class="headerlink" title="syncWith 存入 watchCache 的 store"></a>syncWith 存入 watchCache 的 store</h4><p>reflector 将提取出的指针传给 watchCache.Replace，最终存入 store：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// staging/src/k8s.io/client-go/tools/cache/reflector.go</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r *Reflector)</span></span> syncWith(items []runtime.Object, resourceVersion <span class="type">string</span>) <span class="type">error</span> &#123;</span><br><span class="line">    found := <span class="built_in">make</span>([]<span class="keyword">interface</span>&#123;&#125;, <span class="number">0</span>, <span class="built_in">len</span>(items))</span><br><span class="line">    <span class="keyword">for</span> _, item := <span class="keyword">range</span> items &#123;</span><br><span class="line">        found = <span class="built_in">append</span>(found, item)  <span class="comment">// item 就是 &amp;podList.Items[i]</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> r.store.Replace(found, resourceVersion)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// staging/src/k8s.io/apiserver/pkg/storage/cacher/watch_cache.go</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(w *watchCache)</span></span> Replace(objs []<span class="keyword">interface</span>&#123;&#125;, resourceVersion <span class="type">string</span>) <span class="type">error</span> &#123;</span><br><span class="line">    toReplace := <span class="built_in">make</span>([]<span class="keyword">interface</span>&#123;&#125;, <span class="number">0</span>, <span class="built_in">len</span>(objs))</span><br><span class="line">    <span class="keyword">for</span> _, obj := <span class="keyword">range</span> objs &#123;</span><br><span class="line">        object, _ := obj.(runtime.Object)  <span class="comment">// object = &amp;podList.Items[i]</span></span><br><span class="line">        toReplace = <span class="built_in">append</span>(toReplace, &amp;storeElement&#123;</span><br><span class="line">            key:    key,</span><br><span class="line">            object: object,  <span class="comment">// 持有指向底层数组的指针</span></span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    w.store.Replace(toReplace, resourceVersion)  <span class="comment">// 存入 map store</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此时内存引用链：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">map[key] → storeElement → object (即 &amp;podList.Items[i]) → PodList.Items 底层数组</span><br></pre></td></tr></table></figure>
+
+<h4 id="删除-pod-后底层数组依然存活"><a href="#删除-pod-后底层数组依然存活" class="headerlink" title="删除 pod 后底层数组依然存活"></a>删除 pod 后底层数组依然存活</h4><p>当 pod 被删除时，map 中对应的 key 被移除，<code>&amp;podList.Items[0]</code> ~ <code>&amp;podList.Items[99998]</code> 这些指针都消失了。但如果还有 1 个 pod（比如 Pod[42]）留在 store 中：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">map[&quot;pod-42&quot;] → storeElement → &amp;podList.Items[42] → PodList.Items 底层数组（10万个Pod的完整内存）</span><br></pre></td></tr></table></figure>
+
+<p>gc 扫描时发现：底层数组的第 42 个位置仍被引用，<strong>整个数组不能回收</strong>。这就是为什么删除 99,999 个 pod 后，内存纹丝不动。</p>
+<blockquote>
+<p><strong>注意：</strong> k8s 1.27 之后改用 <code>ExtractListWithAlloc</code>，内部走 <code>case allocNew</code> 分支，通过 <code>reflect.New</code> + <code>Set</code> 做浅拷贝，返回的是独立新对象的指针，不再指向原始底层数组，从而打破引用链。</p>
+</blockquote>
+<h2 id="3-优化与修复方案"><a href="#3-优化与修复方案" class="headerlink" title="3. 优化与修复方案"></a>3. 优化与修复方案</h2><p>为了彻底打破 watchCache 对大底层数组的引用依赖，在 <code>watchCache.Replace</code> 的关键入口处引入了浅拷贝机制。</p>
+<h3 id="3-1-浅拷贝实现逻辑"><a href="#3-1-浅拷贝实现逻辑" class="headerlink" title="3.1 浅拷贝实现逻辑"></a>3.1 浅拷贝实现逻辑</h3><p>在将对象存入 <code>w.store</code> 之前，通过反射创建一个新的结构体实例，并将原对象的值拷贝过去：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 浅拷贝对象，打破对大型底层数组的引用</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">shallowCopyObject</span><span class="params">(object runtime.Object)</span></span> runtime.Object &#123;</span><br><span class="line">    val := reflect.ValueOf(object)</span><br><span class="line">    <span class="keyword">if</span> val.Kind() == reflect.Ptr &#123;</span><br><span class="line">        val = val.Elem()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 在堆上分配一块独立的全新内存</span></span><br><span class="line">    <span class="comment">// 这里只拷贝一个 pod 的外层结构体字段（ObjectMeta、Spec 等），内部的 map/slice（如 Labels map[string]string）</span></span><br><span class="line">    <span class="comment">// 还是共享原对象的引用。但是这些内部数据是只读的，共享是安全的。</span></span><br><span class="line">    newObj := reflect.New(val.Type())</span><br><span class="line">    newObj.Elem().Set(val)</span><br><span class="line">    <span class="keyword">return</span> newObj.Interface().(runtime.Object)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>此时修复前后内存引用对比：</p>
+<ul>
+<li><p>修复前：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">map[key] → &amp;podList.Items[42] → PodList.Items 底层数组（整个数组不能回收）</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修复后：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">map[key] → newPod（堆上独立对象）→ 不指向原数组</span><br><span class="line">                    ↘ newPod.Data → map（与原数组共享，安全）</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="3-2-Kubernetes-官方修复：ExtractListWithAlloc"><a href="#3-2-Kubernetes-官方修复：ExtractListWithAlloc" class="headerlink" title="3.2 Kubernetes 官方修复：ExtractListWithAlloc"></a>3.2 Kubernetes 官方修复：ExtractListWithAlloc</h3><p>Kubernetes 在 1.27 版本中通过 PR #113362 引入了 <code>ExtractListWithAlloc</code> 函数，原理相同：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ExtractListWithAlloc</span><span class="params">(obj runtime.Object)</span></span> ([]runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> extractList(obj, <span class="literal">true</span>)  <span class="comment">// allocNew=true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// extractList 中的关键逻辑</span></span><br><span class="line"><span class="keyword">case</span> allocNew:</span><br><span class="line">    <span class="comment">// shallow copy to avoid retaining a reference to the original list item</span></span><br><span class="line">    itemCopy := reflect.New(raw.Type())</span><br><span class="line">    itemCopy.Elem().Set(raw)</span><br><span class="line">    list[i], _ = itemCopy.Interface().(runtime.Object)</span><br></pre></td></tr></table></figure>
+
+<p>Reflector 改用 <code>ExtractListWithAlloc</code>：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// k8s 1.27+ reflector.go</span></span><br><span class="line">items, err := meta.ExtractListWithAlloc(list)  <span class="comment">// 使用 WithAlloc 版本</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-优化效果"><a href="#3-3-优化效果" class="headerlink" title="3.3 优化效果"></a>3.3 优化效果</h3><ol>
+<li><strong>内存隔离</strong>：浅拷贝会将原本挤在巨大底层数组里的 Pod 外壳，单独”抠”出来放到堆上独立的新内存中。</li>
+<li><strong>释放底层数组</strong>：存入 <code>w.store</code> 的变成了这些独立新对象的指针。当 Replace 流程执行完毕，原始的 <code>PodList.Items</code> 巨大底层数组瞬间失去了所有的指针引用，在下一次 GC 时即可被完全回收。</li>
+<li><strong>性能开销极低</strong>：相较于深拷贝（DeepCopy），浅拷贝只拷贝结构体的最外层，而内部复杂的 Map&#x2F;Slice（如 Containers）依然共享指针。由于缓存对象是只读的，这种共享是安全的，完美兼顾了内存释放与 CPU 性能。</li>
+</ol>
+<h2 id="4-参考资料"><a href="#4-参考资料" class="headerlink" title="4. 参考资料"></a>4. 参考资料</h2><ul>
+<li><a href="https://github.com/kubernetes/kubernetes/issues/113305">Issue #113305: Reflector retains initial list result for a long time</a></li>
+<li><a href="https://github//ubernetes/kubernetes/issues/102718">Issue #102718: client-go memory leak</a></li>
+<li><a href="https://github.com/kubernetes/kubernetes/pull/113362">PR #113362: Faster ExtractList. Add ExtractListWithAlloc variant</a></li>
+<li><a href="https://go.dev/blog/slices-intro#a-possible-gotcha">Go Slices: usage and internals - A possible gotcha</a></li>
+</ul>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+  <section id="comments">
+    <script src="https://giscus.app/client.js"
+            data-repo="fengz63/fengz63.github.io"
+            data-repo-id="R_kgDONkh1Vg"
+            data-category="Q&amp;A"
+            data-category-id="DIC_kwDONkh1Vs4Cuqet"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="zh-CN"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Deployed by <a href="https://github.com/kaedea/notion-down" target="_blank">notion-down</a> and
+    Theme by <a href="https://github.com/kaedea/hexo-theme-hacker" target="_blank">hexo-theme-hacker</a>
+    </br>
+    
+    &copy; 2026 fengcode
+    
+  </p>
+</footer>
+    
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'G-J38N5N288S', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+  </div>
+</div>
+</body>
+</html>
