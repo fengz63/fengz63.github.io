@@ -75,6 +75,69 @@
 
   
     
+    <h3 class="article-title"><a href="/article/725170f8a0f7/"><span>watchCache 内存泄漏问题分析与修复</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/725170f8a0f7/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-09-22T11:45:26.000Z">
+          2026-09-22
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-问题背景"><a href="#1-问题背景" class="headerlink" title="1. 问题背景"></a>1. 问题背景</h2><p>在一些业务场景中，会存在很多直接向 apiserver 发起的 list 请求。为了只获取本任务的数据，请求通常会带上任务标识、应用名称等 label selector。</p>
+<p>例如，一个集群缓存中存在 10 万个 pod，某个任务只有 100 个 pod，其中 80 个同时满足 app&#x3D;train。客户端发起如下查询，希望拿到这 80 个 pod：</p>
+        
+          <p><a class="excerpt-btn" href="/article/725170f8a0f7/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/d7c621f16c84/"><span>watchCache 内存泄漏问题分析与修复</span></a></h3>
     
   
@@ -641,68 +704,6 @@
     <span class="post-tags">
       <i class="icon-tags"></i>
         <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
-    </span>
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/07d643af1193/"><span>Go 类型分析</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/07d643af1193/" rel="bookmark">
-        <time class="entry-date published" datetime="2026-01-18T02:47:00.000Z">
-          2026-01-18
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>Golang 是一门静态类型语言，变量的类型决定了它在内存中的存储方式以及赋值、传参行为。在 Go 中，类型大体可以分为 <strong>值类型（Value Types）</strong> 和 <strong>引用类型（Reference Types）</strong>。理解它们的区别，对于编写高效、正确的 Go 代码非常关键。</p>
-        
-          <p><a class="excerpt-btn" href="/article/07d643af1193/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/技术/">技术</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/技术/">技术</a>
     </span>
     
 
