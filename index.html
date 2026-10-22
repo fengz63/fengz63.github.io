@@ -75,6 +75,75 @@
 
   
     
+    <h3 class="article-title"><a href="/article/65e4a152f15a/"><span>kube-apiserver 源码解读（五）授权机制：从 Attributes 到 RBAC/Node 授权链</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/65e4a152f15a/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-10-22T02:00:00.000Z">
+          2026-10-22
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-引言"><a href="#1-引言" class="headerlink" title="1. 引言"></a>1. 引言</h2><p>在上一篇中，我们完整分析了认证机制——它回答的问题是”你是谁”。请求通过认证后，用户信息被注入 <code>context.Context</code>，紧接着就要面对下一道安全关卡：<strong>授权（Authorization）</strong>。授权回答的问题是”你能做什么”。</p>
+<p>Kubernetes 的授权设计与认证有几个显著差异：</p>
+<ul>
+<li><strong>三态决策</strong>：认证只有成功&#x2F;失败两态，授权有 <code>Allow</code>、<code>Deny</code>、<code>NoOpinion</code> 三态。<code>NoOpinion</code> 表示”我没有意见，请下一个授权器判断”，这是多个授权器能够组合工作的基础</li>
+<li><strong>短路聚合</strong>：授权器链中任何一个返回 <code>Allow</code> 或 <code>Deny</code> 都会立即短路，只有 <code>NoOpinion</code> 才会继续向后传递</li>
+<li><strong>默认拒绝</strong>：如果整个链条走完都没有授权器说 <code>Allow</code>，请求被拒绝。RBAC 授权器匹配不到规则时返回的也是 <code>NoOpinion</code> 而非 <code>Deny</code>——“没有规则允许”不等于”有规则禁止”</li>
+<li><strong>策略与机制分离</strong>：<code>Node</code> 授权器负责 kubelet 的细粒度资源访问，<code>RBAC</code> 负责通用的角色绑定，两者组合使用，各司其职</li>
+</ul>
+        
+          <p><a class="excerpt-btn" href="/article/65e4a152f15a/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+
+
+  <article>
+
+  
+    
     <h3 class="article-title"><a href="/article/493d76fa4146/"><span>kube-apiserver 源码解读（八）REST 存储层与 genericregistry 的实现</span></a></h3>
     
   
@@ -646,68 +715,6 @@
     <span class="post-tags">
       <i class="icon-tags"></i>
         <a href="/tags/旅行/">旅行</a>
-    </span>
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/75155126f64d/"><span>client-go 源码解读（四）Controller 与 Workqueue</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/75155126f64d/" rel="bookmark">
-        <time class="entry-date published" datetime="2026-06-07T08:37:33.000Z">
-          2026-06-07
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>前文介绍了 Informer 如何从 DeltaFIFO 取出数据并更新 Indexer + 分发给 EventHandler。本文介绍整个 Informer 的最后一部分：<strong>Controller</strong>（低层协调者）、<strong>ResourceEventHandler</strong>（用户回调）和 <strong>Workqueue</strong>（可靠任务队列），最终展示一个完整的 Custom Controller 模式。</p>
-        
-          <p><a class="excerpt-btn" href="/article/75155126f64d/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/技术/">技术</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
     </span>
     
 
