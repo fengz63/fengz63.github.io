@@ -33,7 +33,7 @@
   
   <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
   <script src="/js/pangu-407.min.js"></script>
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 8.1.2"></head>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     pangu.autoSpacingPage();
@@ -71,6 +71,69 @@
 
     <main class="site-main posts-loop">
     
+  <article>
+
+  
+    
+    <h3 class="article-title"><a href="/article/55daaf133b3c/"><span>apiserver watch index 索引优化</span></a></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/55daaf133b3c/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-10-29T02:00:00.000Z">
+          2026-10-29
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <h2 id="1-问题背景"><a href="#1-问题背景" class="headerlink" title="1. 问题背景"></a>1. 问题背景</h2><p>大规模集群中，同一种资源可能同时存在大量 watch 连接。以 pod 为例，各节点上的 kubelet 通常只关心分配给自己节点的 pod，但它们订阅的资源类型都是 pods。如果每个 pod 变更都先投递给全部 watcher，再由各自的 selector 判断是否相关，大部分工作可能只是”收到事件后发现与自己无关”。</p>
+<p>以一个例子开始：同一个 apiserver 的 pod Cacher 上，有 10000 个按不同 nodeName 订阅的 watcher，另有 10 个全量 watcher。</p>
+        
+          <p><a class="excerpt-btn" href="/article/55daaf133b3c/"><span>阅读全文</span></a></p>
+        
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+
+
   <article>
 
   
@@ -653,68 +716,6 @@
     <span class="post-tags">
       <i class="icon-tags"></i>
         <a href="/tags/技术/">技术</a><a href="/tags/Kubernetes源码解读/">Kubernetes源码解读</a>
-    </span>
-    
-
-    </div>
-
-    
-  </div>
-</article>
-
-
-
-  <article>
-
-  
-    
-    <h3 class="article-title"><a href="/article/e306632d0a83/"><span>广东之行</span></a></h3>
-    
-  
-
-  <div class="article-top-meta">
-    <span class="posted-on">
-      <a href="/article/e306632d0a83/" rel="bookmark">
-        <time class="entry-date published" datetime="2026-06-07T09:03:10.000Z">
-          2026-06-07
-        </time>
-      </a>
-    </span>
-  </div>
-
-
-  
-
-  <div class="article-content">
-    <div class="entry">
-      
-        <p>五一期间，终于是把粤菜安排上了。</p>
-        
-          <p><a class="excerpt-btn" href="/article/e306632d0a83/"><span>阅读全文</span></a></p>
-        
-      
-    </div>
-
-  </div>
-
-  <div class="article-footer">
-    <div class="article-meta pull-left">
-
-    
-      
-
-    <span class="post-categories">
-      <i class="icon-categories"></i>
-        <a href="/categories/旅行/">旅行</a>
-    </span>
-    
-
-    
-    
-
-    <span class="post-tags">
-      <i class="icon-tags"></i>
-        <a href="/tags/旅行/">旅行</a>
     </span>
     
 

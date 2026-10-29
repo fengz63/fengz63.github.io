@@ -36,7 +36,7 @@
   
   <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
   <script src="/js/pangu-407.min.js"></script>
-<meta name="generator" content="Hexo 7.3.0"></head>
+<meta name="generator" content="Hexo 8.1.2"></head>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     pangu.autoSpacingPage();
@@ -180,12 +180,15 @@
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 浅拷贝对象，打破对大型底层数组的引用</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">shallowCopyObject</span><span class="params">(object runtime.Object)</span></span> runtime.Object &#123;</span><br><span class="line">    val := reflect.ValueOf(object)</span><br><span class="line">    <span class="keyword">if</span> val.Kind() == reflect.Ptr &#123;</span><br><span class="line">        val = val.Elem()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 在堆上分配一块独立的全新内存</span></span><br><span class="line">    <span class="comment">// 这里只拷贝一个 pod 的外层结构体字段（ObjectMeta、Spec 等），内部的 map/slice（如 Labels map[string]string）</span></span><br><span class="line">    <span class="comment">// 还是共享原对象的引用。但是这些内部数据是只读的，共享是安全的。</span></span><br><span class="line">    newObj := reflect.New(val.Type())</span><br><span class="line">    newObj.Elem().Set(val)</span><br><span class="line">    <span class="keyword">return</span> newObj.Interface().(runtime.Object)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <p>此时修复前后内存引用对比：</p>
 <ul>
-<li><p>修复前：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">map[key] → &amp;podList.Items[42] → PodList.Items 底层数组（整个数组不能回收）</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修复后：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">map[key] → newPod（堆上独立对象）→ 不指向原数组</span><br><span class="line">                    ↘ newPod.Data → map（与原数组共享，安全）</span><br></pre></td></tr></table></figure></li>
+<li>修复前：</li>
 </ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">map[key] → &amp;podList.Items[42] → PodList.Items 底层数组（整个数组不能回收）</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>修复后：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">map[key] → newPod（堆上独立对象）→ 不指向原数组</span><br><span class="line">                    ↘ newPod.Data → map（与原数组共享，安全）</span><br></pre></td></tr></table></figure>
+
 <h3 id="3-2-Kubernetes-官方修复：ExtractListWithAlloc"><a href="#3-2-Kubernetes-官方修复：ExtractListWithAlloc" class="headerlink" title="3.2 Kubernetes 官方修复：ExtractListWithAlloc"></a>3.2 Kubernetes 官方修复：ExtractListWithAlloc</h3><p>Kubernetes 在 1.27 版本中通过 PR #113362 引入了 <code>ExtractListWithAlloc</code> 函数，原理相同：</p>
 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ExtractListWithAlloc</span><span class="params">(obj runtime.Object)</span></span> ([]runtime.Object, <span class="type">error</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> extractList(obj, <span class="literal">true</span>)  <span class="comment">// allocNew=true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// extractList 中的关键逻辑</span></span><br><span class="line"><span class="keyword">case</span> allocNew:</span><br><span class="line">    <span class="comment">// shallow copy to avoid retaining a reference to the original list item</span></span><br><span class="line">    itemCopy := reflect.New(raw.Type())</span><br><span class="line">    itemCopy.Elem().Set(raw)</span><br><span class="line">    list[i], _ = itemCopy.Interface().(runtime.Object)</span><br></pre></td></tr></table></figure>
 

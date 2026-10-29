@@ -1,0 +1,311 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>apiserver watch index 索引优化 | Feng&#39;s Tech Blogs | 技术与生活</title>
+
+  
+  <meta name="author" content="fengcode">
+  
+
+  
+  <meta name="description" content="some notes of my life">
+  
+
+  
+  
+  <meta name="keywords" content="技术">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="apiserver watch index 索引优化"/>
+
+  <meta property="og:site_name" content="Feng&#39;s Tech Blogs"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Feng&#39;s Tech Blogs" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  
+  <link href="https://fonts.lug.ustc.edu.cn/css?family=Lato|Rubik" rel="stylesheet">
+  <script src="/js/pangu-407.min.js"></script>
+<meta name="generator" content="Hexo 8.1.2"></head>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    pangu.autoSpacingPage();
+  });
+</script>
+
+<!-- 添加图片查看器脚本 -->
+<script src="/js/image-viewer.js"></script>
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">Feng&#39;s Tech Blogs</a>
+    </h1>
+    <p class="site-description">技术与生活</p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/archives">归档</a></li>
+      
+        <li><a href="/categories">分类</a></li>
+      
+        <li><a href="/about">关于</a></li>
+      
+        <li><a href="/atom.xml">订阅</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>apiserver watch index 索引优化</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/article/55daaf133b3c/" rel="bookmark">
+        <time class="entry-date published" datetime="2026-10-29T02:00:00.000Z">
+          2026-10-29
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        
+
+<script type="text/javascript">
+    function convertRemToPixels(rem) {    
+        return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    }
+    window.onscroll = function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        if (scrollTop > convertRemToPixels(40)) {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'visible';
+        } else {
+            document.getElementsByClassName('toc-article')[0].style.visibility = 'hidden';
+        }
+    }
+</script>
+
+
+<div id="toc" class="toc-article">
+      <div class="toc-content">
+        <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="toc-text">1. 问题背景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="toc-text">2. 问题分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E4%BC%98%E5%8C%96%E6%96%B9%E6%A1%88%EF%BC%9A%E6%94%AF%E6%8C%81%E8%87%AA%E5%AE%9A%E4%B9%89-label-watch-%E7%B4%A2%E5%BC%95"><span class="toc-text">3. 优化方案：支持自定义 label watch 索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E7%B4%A2%E5%BC%95%E4%BD%BF%E7%94%A8%E4%B8%BE%E4%BE%8B"><span class="toc-text">4. 索引使用举例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-Q-A"><span class="toc-text">5. Q&amp;A</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-Q%EF%BC%9AallWatchers-%E5%92%8C-valueWatchers-%E9%83%BD%E8%BF%9B%E5%85%A5-buffer%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BB%8D%E7%84%B6%E5%8A%A0%E9%80%9F"><span class="toc-text">5.1 Q：allWatchers 和 valueWatchers 都进入 buffer，为什么仍然加速</span></a></li></ol></li></ol>
+      </div>
+</div>
+<style>
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+
+
+        <h2 id="1-问题背景"><a href="#1-问题背景" class="headerlink" title="1. 问题背景"></a>1. 问题背景</h2><p>大规模集群中，同一种资源可能同时存在大量 watch 连接。以 pod 为例，各节点上的 kubelet 通常只关心分配给自己节点的 pod，但它们订阅的资源类型都是 pods。如果每个 pod 变更都先投递给全部 watcher，再由各自的 selector 判断是否相关，大部分工作可能只是”收到事件后发现与自己无关”。</p>
+<p>以一个例子开始：同一个 apiserver 的 pod Cacher 上，有 10000 个按不同 nodeName 订阅的 watcher，另有 10 个全量 watcher。</p>
+<span id="more"></span>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">node-0001 的 kubelet → spec.nodeName=node-0001</span><br><span class="line">node-0002 的 kubelet → spec.nodeName=node-0002</span><br><span class="line">...</span><br><span class="line">node-10000 的 kubelet → spec.nodeName=node-10000</span><br><span class="line"></span><br><span class="line">另有 10 个 watcher → 关注全部 Pod</span><br><span class="line"></span><br><span class="line">事件：node-0001 上一个 Pod 更新，nodeName 没有变化</span><br></pre></td></tr></table></figure>
+
+<p>对这个事件，其他 9999 个节点的 kubelet 没有必要参与处理。按 nodeName 分桶是默认 watch 索引已经解决的场景。本文进一步关注按任务、应用等自定义 label 订阅的业务客户端：它们通常不带 spec.nodeName 条件，因而无法利用这个默认字段索引。优化目标是让这些 watcher 也能按业务 label 分桶，在投递到 input channel 之前排除不相关的订阅者。</p>
+<h2 id="2-问题分析"><a href="#2-问题分析" class="headerlink" title="2. 问题分析"></a>2. 问题分析</h2><p>实现中最容易误解的命名是 allWatchers。它表示”每次普通资源事件都需要考虑的 watcher”，而不是全部 watch 连接的全集。</p>
+<p>核心结构如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> watchersMap <span class="keyword">map</span>[<span class="type">int</span>]*cacheWatcher</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> indexedWatchers <span class="keyword">struct</span> &#123;</span><br><span class="line">    allWatchers   watchersMap</span><br><span class="line">    valueWatchers <span class="keyword">map</span>[<span class="type">string</span>]watchersMap</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>不能利用索引条件的 watcher 进入 allWatchers；能够利用索引的 watcher 进入 valueWatchers 的一个或多个值桶。代码说明同一个 watcher 不会同时进去 allWatchers 和 valueWatchers</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(i *indexedWatchers)</span></span> addWatcher(w *cacheWatcher, number <span class="type">int</span>, value <span class="type">string</span>, supported <span class="type">bool</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> supported &#123;</span><br><span class="line">        <span class="keyword">if</span> _, ok := i.valueWatchers[value]; !ok &#123;</span><br><span class="line">            i.valueWatchers[value] = watchersMap&#123;&#125;</span><br><span class="line">        &#125;</span><br><span class="line">        i.valueWatchers[value].addWatcher(w, number)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        i.allWatchers.addWatcher(w, number)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>到这里可能会想，watcher 又是如何被分类，并加入 map 中呢？</p>
+<p>分析代码可以看到，客户端每次新建 watch 请求时，Cacher.Watch 会检查已注册的索引与请求中的精确匹配条件；只有两者匹配，才将 indexName 和对应的 value 加入 set。并不是把请求中的所有 selector 都自动变成索引，代码如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">triggerValue, triggerSupported := sets.NewString(), <span class="literal">false</span></span><br><span class="line">triggerIndexes := sets.NewString()</span><br><span class="line"><span class="keyword">if</span> c.indexedTrigger != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> _, field := <span class="keyword">range</span> pred.IndexFields &#123;</span><br><span class="line">        <span class="keyword">for</span> _, trigger := <span class="keyword">range</span> c.indexedTrigger &#123;</span><br><span class="line">            <span class="keyword">if</span> field == trigger.indexName &#123;</span><br><span class="line">                <span class="keyword">if</span> value, ok := pred.Field.RequiresExactMatch(field); ok &#123;</span><br><span class="line">                    triggerSupported = <span class="literal">true</span></span><br><span class="line">                    triggerValue.Insert(value)</span><br><span class="line">                    triggerIndexes.Insert(trigger.indexName)</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> _, label := <span class="keyword">range</span> pred.IndexLabels &#123;</span><br><span class="line">        <span class="keyword">for</span> _, trigger := <span class="keyword">range</span> c.indexedTrigger &#123;</span><br><span class="line">            <span class="keyword">if</span> !strings.HasPrefix(trigger.indexName, WatchLabelIndexPrefix) &#123;</span><br><span class="line">                <span class="keyword">continue</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> labelName := strings.TrimPrefix(trigger.indexName, WatchLabelIndexPrefix); labelName == label &#123;</span><br><span class="line">                <span class="keyword">if</span> value, ok := pred.Label.RequiresExactMatch(label); ok &#123;</span><br><span class="line">                    triggerSupported = <span class="literal">true</span></span><br><span class="line">                    triggerValue.Insert(value)</span><br><span class="line">                    triggerIndexes.Insert(trigger.indexName)</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>例如有如下客户端请求：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">watch pods，fieldSelector=spec.nodeName=node-a</span><br></pre></td></tr></table></figure>
+
+<p>这段代码依次判断：</p>
+<ul>
+<li><p>pred.IndexFields 声明 spec.nodeName 可以用于索引</p>
+</li>
+<li><p>c.indexedTrigger 中确实注册了 “spec.nodeName” 对应的提取函数</p>
+</li>
+<li><p>pred.Field.RequiresExactMatch(field) 从请求的 selector 中提取出 “node-a”。</p>
+</li>
+</ul>
+<p>上述代码执行后：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">triggerSupported = true</span><br><span class="line">triggerValue     = &#123;&quot;node-a&quot;&#125;</span><br><span class="line">triggerIndexes   = &#123;&quot;spec.nodeName&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>随后用这些信息注册 watcher：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">valueWatchers[&quot;node-a&quot;] ← 当前 watcher</span><br></pre></td></tr></table></figure>
+
+
+
+<p>当前 apiserver 中默认配置的是 spec.nodeName、node、secret、configmap 的 metadata.name 索引。然而大部分 client 的 watch 请求不会使用这些作为 selector，默认仍进入 allWatchers。</p>
+<p>因此，我们需要在保留默认索引的基础上，支持通过配置传入自定义 label key，并复用现有的分桶和分发机制。</p>
+<h2 id="3-优化方案：支持自定义-label-watch-索引"><a href="#3-优化方案：支持自定义-label-watch-索引" class="headerlink" title="3. 优化方案：支持自定义 label watch 索引"></a>3. 优化方案：支持自定义 label watch 索引</h2><p>首先需要注册自定义 label 的提取函数和查询条件。与默认实现直接返回 Pod.Spec.NodeName 不同，自定义 trigger 从该 pod 的可选择 label 集合中读取配置指定的值：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> utilfeature.DefaultFeatureGate.Enabled(features.WatchPodByLabelIndex) &#123;</span><br><span class="line">    <span class="keyword">if</span> labelName := os.Getenv(registrypod.WatchLabelIndexNameENV); <span class="built_in">len</span>(labelName) &gt; <span class="number">0</span> &#123;</span><br><span class="line">        indexName := cacher.WatchLabelIndexPrefix + labelName</span><br><span class="line">        options.TriggerFunc[indexName] = <span class="function"><span class="keyword">func</span><span class="params">(obj runtime.Object)</span></span> <span class="type">string</span> &#123;</span><br><span class="line">            pod, ok := obj.(*api.Pod)</span><br><span class="line">            <span class="keyword">if</span> !ok &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="string">&quot;&quot;</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> registrypod.ToSelectableLabels(pod)[labelName]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>假设配置 POD_WATCH_LABEL_INDEX&#x3D;app，trigger.indexName 就是 metadata.labels:app；trigger.indexerFunc 则从事件 pod 中提取 app 的值，例如 foo。</p>
+<p>请求侧也需要同步声明同一个 label key。MatchPod 在保留 IndexFields 中 spec.nodeName 的同时，将配置值加入 IndexLabels；否则即使对象侧注册了 trigger，Cacher.Watch 也不会尝试从请求中提取这个 label 的值。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> indexLabels []<span class="type">string</span></span><br><span class="line"><span class="keyword">if</span> utilfeature.DefaultFeatureGate.Enabled(features.WatchPodByLabelIndex) &#123;</span><br><span class="line">    <span class="keyword">if</span> label := os.Getenv(WatchLabelIndexNameENV); <span class="built_in">len</span>(label) &gt; <span class="number">0</span> &#123;</span><br><span class="line">        indexLabels = <span class="built_in">append</span>(indexLabels, label)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> storage.SelectionPredicate&#123;</span><br><span class="line">    Label:       label,</span><br><span class="line">    Field:       field,</span><br><span class="line">    GetAttrs:    GetAttrs,</span><br><span class="line">    IndexFields: []<span class="type">string</span>&#123;<span class="string">&quot;spec.nodeName&quot;</span>&#125;,</span><br><span class="line">    IndexLabels: indexLabels,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>完成上述服务端配置后，Cacher.Watch 在每次新建 watch 时分析请求条件，如果有 IndexLabels，会从请求 selector 提取值，并加入 triggervalue 和 triggerIndexes</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> _, label := <span class="keyword">range</span> pred.IndexLabels &#123;</span><br><span class="line">    <span class="keyword">for</span> _, trigger := <span class="keyword">range</span> c.indexedTrigger &#123;</span><br><span class="line">        <span class="keyword">if</span> !strings.HasPrefix(trigger.indexName, WatchLabelIndexPrefix) &#123;</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> labelName := strings.TrimPrefix(trigger.indexName, WatchLabelIndexPrefix); labelName == label &#123;</span><br><span class="line">            <span class="keyword">if</span> value, ok := pred.Label.RequiresExactMatch(label); ok &#123;</span><br><span class="line">                triggerSupported = <span class="literal">true</span></span><br><span class="line">                triggerValue.Insert(value)</span><br><span class="line">                triggerIndexes.Insert(trigger.indexName)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对于已配置 app 索引的服务端，请求 labelSelector&#x3D;app&#x3D;foo 会得到 triggerSupported&#x3D;true、triggerValue&#x3D;{foo}、triggerIndexes&#x3D;{metadata.labels:app}，随后 watcher 加入 valueWatchers[“foo”]。</p>
+<p><strong>自定义的是可索引的 label key，不是取消精确匹配限制。</strong> app&#x3D;foo 和 app in (foo) 能提供单个确定值；app in (foo,bar)、app!&#x3D;foo 等条件不能单独利用这套 label 桶定位逻辑。</p>
+<h2 id="4-索引使用举例"><a href="#4-索引使用举例" class="headerlink" title="4. 索引使用举例"></a>4. 索引使用举例</h2><p>假设当前一个业务 watcher 使用 app 作为 label selector 来 watch pod；服务端启用 WatchPodByLabelIndex，并配置 POD_WATCH_LABEL_INDEX&#x3D;app。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">W1：watch 全部 pod</span><br><span class="line">W2：watch app=foo</span><br><span class="line">W3：watch app=foo</span><br><span class="line">W4：watch app=bar</span><br><span class="line"></span><br><span class="line">未配置 app 索引：</span><br><span class="line">    allWatchers = &#123;W1, W2, W3, W4&#125;</span><br><span class="line"></span><br><span class="line">配置 app 索引后：</span><br><span class="line">    allWatchers = &#123;W1&#125;</span><br><span class="line">    valueWatchers[&quot;foo&quot;] = &#123;W2, W3&#125;</span><br><span class="line">    valueWatchers[&quot;bar&quot;] = &#123;W4&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当 app&#x3D;foo 的 pod 更新且 app 不变时，优化前四个 watcher 都需要接收候选事件；优化后，在上述业务 watcher 中只向 W1、W2、W3 投递，W4 不参与这次消费。</p>
+<h2 id="5-Q-A"><a href="#5-Q-A" class="headerlink" title="5. Q&amp;A"></a>5. Q&amp;A</h2><h3 id="5-1-Q：allWatchers-和-valueWatchers-都进入-buffer，为什么仍然加速"><a href="#5-1-Q：allWatchers-和-valueWatchers-都进入-buffer，为什么仍然加速" class="headerlink" title="5.1 Q：allWatchers 和 valueWatchers 都进入 buffer，为什么仍然加速"></a>5.1 Q：allWatchers 和 valueWatchers 都进入 buffer，为什么仍然加速</h3><p>关键不是事件分发最终是否都经过 watchersBuffer，而是哪些 watcher 被放进这一次 buffer。用五个订阅演示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">W1：watch 全部 Pod</span><br><span class="line">W2：watch spec.nodeName=node-a</span><br><span class="line">W3：watch spec.nodeName=node-a</span><br><span class="line">W4：watch spec.nodeName=node-b</span><br><span class="line">W5：watch spec.nodeName=node-c</span><br><span class="line"></span><br><span class="line">allWatchers = &#123;W1&#125;</span><br><span class="line"></span><br><span class="line">valueWatchers = &#123;</span><br><span class="line">    &quot;node-a&quot;: &#123;W2, W3&#125;,</span><br><span class="line">    &quot;node-b&quot;: &#123;W4&#125;,</span><br><span class="line">    &quot;node-c&quot;: &#123;W5&#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当 node-a 上的 pod 更新且 nodeName 不变时：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">triggerValues = &#123;&quot;node-a&quot;&#125;</span><br><span class="line"></span><br><span class="line">watchersBuffer = allWatchers ∪ valueWatchers[&quot;node-a&quot;]</span><br><span class="line">               = &#123;W1, W2, W3&#125;</span><br><span class="line"></span><br><span class="line">W4、W5 不加入本次 buffer，也不收到本次 input 投递。</span><br></pre></td></tr></table></figure>
+
+
+
+<p>回到开头假设的 10000 个 nodeName watcher 加 10 个全量 watcher：对于 nodeName 不变、且不考虑额外 label 桶的事件，候选规模由 10010 缩小为 11。</p>
+<table>
+<thead>
+<tr>
+<th>工作</th>
+<th>无可用 watcher 索引</th>
+<th>命中 nodeName 桶</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>候选 watcher 数</td>
+<td>10010</td>
+<td>10 + 1 &#x3D; 11</td>
+</tr>
+<tr>
+<td>事件 input 投递对象</td>
+<td>所有 watcher</td>
+<td>全量 watcher 加对应节点 watcher</td>
+</tr>
+<tr>
+<td>后续完整过滤</td>
+<td>各 watcher 消费事件后判断</td>
+<td>仅候选 watcher 需要判断</td>
+</tr>
+<tr>
+<td>客户端匹配语义</td>
+<td>按完整 selector 决定</td>
+<td>保持不变</td>
+</tr>
+</tbody></table>
+<p>因此，收益来自减少候选遍历、channel 投递、事件消费和完整匹配。</p>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+      
+
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/技术/">技术</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/技术/">技术</a>
+    </span>
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+  <section id="comments">
+    <script src="https://giscus.app/client.js"
+            data-repo="fengz63/fengz63.github.io"
+            data-repo-id="R_kgDONkh1Vg"
+            data-category="Q&amp;A"
+            data-category-id="DIC_kwDONkh1Vs4Cuqet"
+            data-mapping="pathname"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="bottom"
+            data-theme="light"
+            data-lang="zh-CN"
+            crossorigin="anonymous"
+            async>
+    </script>
+  </section>
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    Deployed by <a href="https://github.com/kaedea/notion-down" target="_blank">notion-down</a> and
+    Theme by <a href="https://github.com/kaedea/hexo-theme-hacker" target="_blank">hexo-theme-hacker</a>
+    </br>
+    
+    &copy; 2026 fengcode
+    
+  </p>
+</footer>
+    
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'G-J38N5N288S', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+  </div>
+</div>
+</body>
+</html>
